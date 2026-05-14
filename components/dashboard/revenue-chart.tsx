@@ -90,7 +90,7 @@ export function RevenueChart() {
           ))}
         </div>
       </CardHeader>
-      <CardContent className="grid h-[340px] grid-cols-[30px_minmax(0,1fr)_23px] grid-rows-[1fr_24px]">
+      <CardContent className="grid h-85 grid-cols-[30px_minmax(0,1fr)_23px] grid-rows-[1fr_24px]">
         <AxisLabels labels={["40k", "30k", "20k", "10k", "0k"]} />
         <div className="relative border-b border-[rgba(0,0,26,0.3)]">
           <div className="absolute inset-0 grid grid-rows-5">
