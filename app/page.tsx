@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import ShapeGrid from "@/components/ui/shape-grid";
 import { cn } from "@/lib/utils";
 
 const navSections = [
@@ -15,6 +14,7 @@ const navSections = [
   { label: "Trainer", section: "trainers", icon: TrainerIcon },
   { label: "Verification", section: "verification", icon: ShieldIcon },
   { label: "Transactions", section: "transactions", icon: CardIcon },
+  { label: "Support", section: "support", icon: SupportIcon },
 ];
 
 const metricCards = [
@@ -285,12 +285,186 @@ const trainers = [
   },
 ];
 
+const transactions = [
+  {
+    id: "TXN-9925",
+    date: "25 Dec 2019",
+    payBy: "Luna Ian",
+    payBySub: "Sophia",
+    amount: "$500",
+    fee: "10%",
+    trainerGet: "$1 300",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9925",
+    date: "1 Feb 2020",
+    payBy: "Emma",
+    payBySub: "Emma",
+    amount: "$1 300",
+    fee: "10%",
+    trainerGet: "$1 900",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9925",
+    date: "24 Oct 2019",
+    payBy: "Olivia",
+    payBySub: "Olivia",
+    amount: "$1 200",
+    fee: "10%",
+    trainerGet: "$400",
+    status: "Processing",
+  },
+  {
+    id: "TXN-9925",
+    date: "17 Oct 2019",
+    payBy: "USR-9123",
+    payBySub: "Ava",
+    amount: "$1 500",
+    fee: "10%",
+    trainerGet: "$1 100",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9925",
+    date: "3 Jan 2020",
+    payBy: "Isabella",
+    payBySub: "Isabella",
+    amount: "$2 000",
+    fee: "10%",
+    trainerGet: "$1 000",
+    status: "Processing",
+  },
+  {
+    id: "TXN-9925",
+    date: "8 Jun 2020",
+    payBy: "USR-4559",
+    payBySub: "Mia",
+    amount: "$1 000",
+    fee: "10%",
+    trainerGet: "$800",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9925",
+    date: "21 Sep 2018",
+    payBy: "Evelyn",
+    payBySub: "Evelyn",
+    amount: "$1 700",
+    fee: "10%",
+    trainerGet: "$300",
+    status: "Processing",
+  },
+  {
+    id: "TXN-9925",
+    date: "7 Oct 2019",
+    payBy: "Abigail",
+    payBySub: "Abigail",
+    amount: "$1 900",
+    fee: "10%",
+    trainerGet: "$600",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9925",
+    date: "8 Sep 2020",
+    payBy: "Ella",
+    payBySub: "Ella",
+    amount: "$1 600",
+    fee: "10%",
+    trainerGet: "$500",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9925",
+    date: "13 Feb 2020",
+    payBy: "Harper",
+    payBySub: "Harper",
+    amount: "$700",
+    fee: "10%",
+    trainerGet: "$1 700",
+    status: "Completed",
+  },
+  {
+    id: "TXN-9926",
+    date: "15 Jul 2020",
+    payBy: "Lucas",
+    payBySub: "Lucas",
+    amount: "$2 300",
+    fee: "15%",
+    trainerGet: "$1 200",
+    status: "Pending",
+  },
+];
+
+const supportTickets = [
+  {
+    id: "T-001",
+    status: "New",
+    title: "Auto-Approve Bookings",
+    date: "15 May 26 8:00 pm",
+    replies: "1 reply",
+    expanded: false,
+    comments: [],
+  },
+  {
+    id: "T-001",
+    status: "In Progress",
+    title: "Auto-Approve Bookings",
+    date: "15 May 26 8:00 pm",
+    expanded: true,
+    comments: [
+      {
+        author: "Deja Brady",
+        initial: "D",
+        date: "15 May 2020 8:00 pm",
+        body: "I filled in Section 2 of the AM2 checklist yesterday but when I logged in today it was all blank again. I have tried on Chrome and Firefox.",
+        tone: "neutral",
+      },
+      {
+        author: "Deja Brady",
+        initial: "D",
+        date: "15 May 2020 8:00 pm",
+        body: "Hi James, we are looking into this. Could you try clearing your browser cache and trying again?",
+        tone: "reply",
+      },
+    ],
+    replyBox: true,
+  },
+  {
+    id: "T-001",
+    status: "Resolved",
+    title: "Auto-Approve Bookings",
+    date: "15 May 26 8:00 pm",
+    expanded: true,
+    comments: [
+      {
+        author: "Deja Brady",
+        initial: "D",
+        date: "15 May 26 8:00 pm",
+        body: "I filled in Section 2 of the AM2 checklist yesterday but when I logged in today it was all blank again. I have tried on Chrome and Firefox.",
+        tone: "neutral",
+      },
+      {
+        author: "Deja Brady",
+        initial: "D",
+        date: "15 May 26 8:00 pm",
+        body: "Hi James, we are looking into this. Could you try clearing your browser cache and trying again?",
+        tone: "reply",
+      },
+    ],
+    resolved: true,
+  },
+];
+
 type DashboardSection =
   | "overview"
   | "members"
   | "trainers"
   | "verification"
   | "transactions"
+  | "support"
   | "settings";
 
 export default function Home() {
@@ -331,10 +505,16 @@ export default function Home() {
               <TrainerSection onOpenTrainerDetails={setSelectedTrainer} />
             ) : null}
             {activeSection === "verification" ? <VerificationSection /> : null}
+            {activeSection === "transactions" ? <TransactionsSection /> : null}
+            {activeSection === "support" ? <SupportSection /> : null}
+            {activeSection === "settings" ? <SettingsSection /> : null}
             {activeSection !== "overview" &&
               activeSection !== "members" &&
               activeSection !== "trainers" &&
-              activeSection !== "verification" ? (
+              activeSection !== "verification" &&
+              activeSection !== "transactions" &&
+              activeSection !== "support" &&
+              activeSection !== "settings" ? (
               <ComingSoonSection section={activeSection} />
             ) : null}
           </section>
@@ -362,20 +542,7 @@ function SignInScreen({
   onSignIn: () => void;
 }) {
   return (
-    <main className="relative grid min-h-screen overflow-hidden bg-[#120f17] px-5 py-8 text-[#121212]">
-      <div className="absolute inset-0">
-        <ShapeGrid
-          speed={0.5}
-          squareSize={40}
-          direction="diagonal"
-          borderColor="#ff6db5"
-          hoverFillColor="#f7869a"
-          shape="square"
-          hoverTrailAmount={10}
-        />
-
-      </div>
-
+    <main className="login-figma-bg relative grid min-h-screen overflow-hidden px-5 py-8 text-[#121212]">
       <form
         aria-labelledby="sign-in-title"
         className="styled-form relative z-10 m-auto flex w-full max-w-[408px] flex-col items-center gap-4 p-10"
@@ -427,13 +594,17 @@ function SignInScreen({
             </label>
 
             <div className="mt-2 flex items-center justify-between gap-4">
-              <label className="flex items-center gap-2 text-sm font-medium text-[#4a4a4a]">
-                <input
-                  type="checkbox"
-                  className="size-5 appearance-none rounded border-[1.5px] border-[#121212] bg-white checked:border-[#f7869a] checked:bg-[#f7869a]"
-                />
-                <span>Remember me</span>
-              </label>
+              <div className="flex items-center gap-2">
+                <div className="checkbox-styled-wrapper">
+                  <label className="checkbox-container" aria-label="Remember me">
+                    <input type="checkbox" defaultChecked />
+                    <div className="checkmark" />
+                  </label>
+                </div>
+                <span className="text-sm font-medium text-[#4a4a4a]">
+                  Remember me
+                </span>
+              </div>
               <button
                 type="button"
                 className="text-sm font-medium text-[#121212] transition-colors hover:text-[#f7869a]"
@@ -1535,6 +1706,499 @@ function VerificationDetail({ label, value }: { label: string; value: string }) 
   );
 }
 
+function TransactionsSection() {
+  return (
+    <section
+      id="transactions"
+      aria-labelledby="transactions-title"
+      className="min-h-0 flex-1"
+    >
+      <Card className="flex h-full min-h-0 flex-col gap-[14px] overflow-hidden rounded-[14px] border-[#e3e6f0] bg-white px-3 py-3.5 shadow-none">
+        <div className="flex shrink-0 items-center gap-2.5">
+          <div className="min-w-0 flex-1">
+            <h1
+              id="transactions-title"
+              className="text-2xl font-medium leading-8 tracking-[0.12px] text-[#1e293b]"
+            >
+              Transactions
+            </h1>
+            <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
+              Financial overview and history.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+          >
+            <DocumentDownloadIcon className="size-6" />
+            Export CSV
+          </button>
+
+          <button
+            type="button"
+            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+          >
+            <TuneIcon className="size-6" />
+            Filter
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[#c4cdd5]">
+          <div className="min-h-0 flex-1 overflow-auto">
+            <table className="w-full min-w-[1080px] border-collapse text-left">
+              <thead className="sticky top-0 z-10">
+                <tr className="h-[55px] bg-[#f7f7f7] text-sm font-semibold leading-5 tracking-[0.07px] text-[#4a4a4a]">
+                  {["Transaction ID", "Date", "Pay By", "Amount", "Fee", "Trainer get", "Actions"].map((heading) => (
+                    <th
+                      key={heading}
+                      className="border-b border-[#e0e0e0] px-0 py-2 first:[&>div]:border-l-0"
+                    >
+                      <div className="flex h-6 items-center border-l border-[#c4cdd5] px-3">
+                        <span className="truncate">{heading}</span>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="font-['Public_Sans',Arial,sans-serif]">
+                {transactions.map((transaction, index) => (
+                  <tr key={`${transaction.id}-${transaction.date}-${index}`} className="h-[52px] bg-white">
+                    <TransactionCell>{transaction.id}</TransactionCell>
+                    <TransactionCell className="font-sans tracking-[0.07px]">{transaction.date}</TransactionCell>
+                    <td className="border-b border-dashed border-[#c4cdd5] px-3 py-2">
+                      <div className="flex min-w-0 flex-col justify-center">
+                        <p className="truncate text-sm font-normal leading-[22px] tracking-[0.22px] text-[#1c252e]">
+                          {transaction.payBy}
+                        </p>
+                        <p className="truncate text-xs font-normal leading-[18px] tracking-[0.18px] text-[#454f5b]">
+                          {transaction.payBySub}
+                        </p>
+                      </div>
+                    </td>
+                    <TransactionCell>{transaction.amount}</TransactionCell>
+                    <TransactionCell>{transaction.fee}</TransactionCell>
+                    <TransactionCell>{transaction.trainerGet}</TransactionCell>
+                    <td className="border-b border-dashed border-[#c4cdd5] px-3 py-2">
+                      <TransactionStatusBadge status={transaction.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <TablePagination />
+        </div>
+      </Card>
+    </section>
+  );
+}
+
+function TransactionCell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <td
+      className={cn(
+        "border-b border-dashed border-[#c4cdd5] px-3 py-2 text-sm font-normal leading-[22px] tracking-[0.22px] text-[#1c252e]",
+        className,
+      )}
+    >
+      <span className="block truncate">{children}</span>
+    </td>
+  );
+}
+
+function TransactionStatusBadge({ status }: { status: string }) {
+  const styles =
+    status === "Completed"
+      ? "bg-[#dcfce7] text-[#00a76f]"
+      : status === "Processing"
+        ? "bg-[#fef3c7] text-[#f59e0b]"
+        : "bg-[#dcfce7] text-[#00a76f]";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 items-center justify-center rounded px-2 font-['Public_Sans',Arial,sans-serif] text-sm font-semibold leading-[22px] tracking-[0.22px]",
+        styles,
+      )}
+    >
+      {status}
+    </span>
+  );
+}
+
+function SupportSection() {
+  return (
+    <section
+      id="support"
+      aria-labelledby="support-title"
+      className="min-h-0 flex-1 overflow-hidden"
+    >
+      <Card className="flex h-full min-h-0 flex-col gap-3 overflow-hidden rounded-xl border-[#d6e6f2] bg-white p-3.5 shadow-none">
+        <div className="flex shrink-0 items-center gap-2.5 px-2.5">
+          <h1
+            id="support-title"
+            className="min-w-0 flex-1 text-xl font-semibold leading-7 tracking-[0.1px] text-[#0f172a]"
+          >
+            Member
+          </h1>
+          <button
+            type="button"
+            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+          >
+            <TuneIcon className="size-6" />
+            Filter
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-[#fdf2f4] p-2">
+          <div className="flex min-w-[840px] flex-col gap-3">
+            {supportTickets.map((ticket, index) => (
+              <SupportTicketCard key={`${ticket.status}-${index}`} ticket={ticket} />
+            ))}
+          </div>
+        </div>
+      </Card>
+    </section>
+  );
+}
+
+function SupportTicketCard({
+  ticket,
+}: {
+  ticket: (typeof supportTickets)[number];
+}) {
+  return (
+    <article className="rounded-xl border border-[#e2e8f0] bg-white p-3">
+      <div className={cn("flex flex-col gap-3", ticket.expanded ? "pb-3" : "")}>
+        <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="shrink-0 text-sm font-normal leading-5 tracking-[0.07px] text-[#4a4a68]">
+              {ticket.id}
+            </span>
+            <SupportStatusBadge status={ticket.status} />
+          </div>
+          {ticket.replies ? (
+            <span className="inline-flex h-[30px] shrink-0 items-center justify-center rounded-[10px] border border-[#d6e6f2] bg-[#eaf4fb] px-[13px] text-sm font-medium leading-5 tracking-[0.07px] text-[#33358e]">
+              {ticket.replies}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-[#33358e] hover:bg-[#f7f7f7] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+            aria-label={ticket.expanded ? "Collapse support ticket" : "Expand support ticket"}
+          >
+            {ticket.expanded ? (
+              <ChevronUpIcon className="size-6" />
+            ) : (
+              <ChevronDownIcon className="size-6" />
+            )}
+          </button>
+        </div>
+
+        <h2 className="text-lg font-medium leading-7 tracking-[0.09px] text-[#0f172a]">
+          {ticket.title}
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className="size-2.5 rounded-full bg-[#d9d9d9]" aria-hidden="true" />
+          <span className="text-sm font-medium leading-5 tracking-[0.07px] text-[#4a4a4a]">
+            {ticket.date}
+          </span>
+        </div>
+      </div>
+
+      {ticket.expanded ? (
+        <div className="border-t border-[#e9eef4] pt-4">
+          <div className="flex flex-col gap-4">
+            {ticket.comments.map((comment, index) => (
+              <SupportComment key={`${comment.author}-${index}`} comment={comment} />
+            ))}
+            {ticket.replyBox ? <SupportReplyBox /> : null}
+            {ticket.resolved ? <SupportResolvedAlert /> : null}
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function SupportStatusBadge({ status }: { status: string }) {
+  const styles =
+    status === "New"
+      ? "bg-[#ace3ff] text-[#006599]"
+      : status === "In Progress"
+        ? "bg-[#fef3c7] text-[#f59e0b]"
+        : "bg-[#dcfce7] text-[#16a34a]";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex h-8 items-center rounded-lg px-2 text-sm font-semibold leading-5 tracking-[0.07px] shadow-[0_1px_1px_rgba(0,0,0,0.05)]",
+        styles,
+      )}
+    >
+      {status}
+    </span>
+  );
+}
+
+function SupportComment({
+  comment,
+}: {
+  comment: (typeof supportTickets)[number]["comments"][number];
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-3 rounded-lg border px-4 py-4",
+        comment.tone === "reply"
+          ? "border-[#e0e0e0] bg-[#fdf2f4]"
+          : "border-[#f2f2f2] bg-[#f7f7f7]",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex size-8 items-center justify-center rounded-full bg-[#1d4ed8] font-['Public_Sans',Arial,sans-serif] text-sm leading-[22px] tracking-[0.22px] text-white">
+            {comment.initial}
+          </span>
+          <span className="text-sm font-medium leading-5 tracking-[0.07px] text-[#121212]">
+            {comment.author}
+          </span>
+        </div>
+        <span className="text-sm font-medium leading-5 tracking-[0.07px] text-[#4a4a4a]">
+          {comment.date}
+        </span>
+      </div>
+      <p className="text-sm font-normal leading-5 tracking-[0.07px] text-[#344056]">
+        {comment.body}
+      </p>
+    </div>
+  );
+}
+
+function SupportReplyBox() {
+  return (
+    <div className="overflow-hidden rounded-lg">
+      <textarea
+        aria-label="Reply"
+        placeholder="Type your reply..."
+        className="block h-[99px] w-full resize-none border border-[#e9eef4] bg-[#f1f5fa] px-4 py-3 text-sm font-normal leading-5 tracking-[0.07px] text-[#0f172a] outline-none placeholder:text-[#4a4a68] focus:border-[#f7869a]"
+      />
+      <div className="flex items-center justify-between border-x border-b border-[#e9eef4] bg-[#f8f8ff] px-2 py-2.5">
+        <button
+          type="button"
+          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#16a34a] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white hover:bg-[#15803d] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20"
+        >
+          <ClipboardTextIcon className="size-6" />
+          Resolved
+        </button>
+        <button
+          type="button"
+          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white hover:bg-[#242424] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+        >
+          <SendIcon className="size-6" />
+          Send Replay
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SupportResolvedAlert() {
+  return (
+    <div className="flex h-[50px] items-center gap-4 rounded-lg bg-[#dcfce7] px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]">
+      <InfoCircleIcon className="size-6 shrink-0 text-[#16a34a]" />
+      <p className="min-w-0 flex-1 text-sm font-medium leading-5 tracking-[0.07px] text-[#16a34a]">
+        This ticket has been resolved
+      </p>
+      <button
+        type="button"
+        className="flex h-[30px] shrink-0 items-center justify-center rounded-lg bg-[#f1f5fa] px-3 text-sm font-semibold leading-5 tracking-[0.07px] text-[#0f172a] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20"
+      >
+        Reopen
+      </button>
+    </div>
+  );
+}
+
+function SettingsSection() {
+  const [settingsTab, setSettingsTab] = useState<"profile" | "password">("profile");
+
+  return (
+    <section
+      id="settings-panel"
+      aria-labelledby="settings-title"
+      className="grid min-h-0 flex-1 grid-cols-[102px_minmax(0,1fr)] overflow-hidden"
+    >
+      <aside
+        className="border-r border-[#f2f2f2] bg-white px-[31px] py-4"
+        aria-label="Settings menu"
+      >
+        <h1
+          id="settings-title"
+          className="px-2 text-xs font-medium leading-4 text-[#121212]"
+        >
+          Setting
+        </h1>
+        <div className="mt-2 flex flex-col gap-2">
+          <SettingsIconButton
+            label="Profile information"
+            active={settingsTab === "profile"}
+            onClick={() => setSettingsTab("profile")}
+          >
+            <ProfileCircleIcon className="size-6" />
+          </SettingsIconButton>
+          <SettingsIconButton
+            label="Change password"
+            active={settingsTab === "password"}
+            onClick={() => setSettingsTab("password")}
+          >
+            <PasswordCheckIcon className="size-6" />
+          </SettingsIconButton>
+          <SettingsIconButton
+            label="Account profile"
+            active={false}
+            onClick={() => setSettingsTab("profile")}
+          >
+            <ProfileCircleIcon className="size-6" />
+          </SettingsIconButton>
+        </div>
+      </aside>
+
+      <div className="min-h-0 overflow-auto pl-6 pr-0">
+        {settingsTab === "profile" ? <ProfileSettingsPanel /> : null}
+        {settingsTab === "password" ? <PasswordSettingsPanel /> : null}
+      </div>
+    </section>
+  );
+}
+
+function SettingsIconButton({
+  active,
+  children,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "flex size-12 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30",
+        active
+          ? "bg-[#fdf2f4] text-[#e06f83]"
+          : "text-[#4a4a4a] hover:bg-[#f7f7f7] hover:text-[#e06f83]",
+      )}
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ProfileSettingsPanel() {
+  return (
+    <SettingsPanel
+      icon={<ProfileCircleIcon className="size-6 text-[#e06f83]" />}
+      title="Profile Information"
+      actionLabel="Save Profile Change"
+    >
+      <div className="rounded-lg bg-white p-3">
+        <SettingsField label="Full Name" placeholder="Example" />
+        <div className="mt-3.5 grid gap-3.5 md:grid-cols-2">
+          <SettingsField label="Email Address" placeholder="Example@email.com" type="email" />
+          <SettingsField label="Phone Number" placeholder="Example123" type="tel" />
+        </div>
+      </div>
+    </SettingsPanel>
+  );
+}
+
+function PasswordSettingsPanel() {
+  return (
+    <SettingsPanel
+      icon={<PasswordCheckIcon className="size-6 text-[#e06f83]" />}
+      title="Change Your Password"
+      actionLabel="Update Password"
+    >
+      <div className="rounded-lg bg-white p-3">
+        <div className="flex flex-col gap-3.5">
+          <SettingsField label="Current Password" placeholder="Enter current password" type="password" />
+          <SettingsField label="New Password" placeholder="Create a new secure password" type="password" />
+          <SettingsField label="Confirm Password" placeholder="Re-enter new password to confirm" type="password" />
+        </div>
+      </div>
+    </SettingsPanel>
+  );
+}
+
+function SettingsPanel({
+  actionLabel,
+  children,
+  icon,
+  title,
+}: {
+  actionLabel: string;
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <Card className="flex w-full flex-col gap-[18px] rounded-[14px] border-[#e0e0e0] bg-[#fdf2f4] px-3 py-3.5 shadow-none">
+      <div className="flex min-h-12 items-center gap-5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          {icon}
+          <h2 className="min-w-0 flex-1 text-xl font-semibold leading-7 tracking-[0.1px] text-black">
+            {title}
+          </h2>
+        </div>
+        <button
+          type="button"
+          className="flex h-12 shrink-0 items-center justify-center rounded-lg border border-[#f2f2f2] bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+        >
+          {actionLabel}
+        </button>
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function SettingsField({
+  label,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  placeholder: string;
+  type?: React.HTMLInputTypeAttribute;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-base font-medium leading-6 tracking-[0.08px] text-[#121212]">
+        {label}
+      </span>
+      <input
+        type={type}
+        placeholder={placeholder}
+        className="h-12 rounded-lg border border-[#cbd5ed] bg-white px-4 py-3 text-base font-normal leading-6 tracking-[0.08px] text-[#121212] outline-none placeholder:text-[#7a7a7a] focus:border-[#f7869a] focus:ring-4 focus:ring-[#f7869a]/15"
+      />
+    </label>
+  );
+}
+
 function ComingSoonSection({ section }: { section: DashboardSection }) {
   const title =
     section === "trainers"
@@ -1543,7 +2207,9 @@ function ComingSoonSection({ section }: { section: DashboardSection }) {
         ? "Verification"
         : section === "transactions"
           ? "Transactions"
-          : "Settings";
+          : section === "support"
+            ? "Support"
+            : "Settings";
 
   return (
     <section
@@ -1711,6 +2377,47 @@ function CardIcon({ className }: { className?: string }) {
   );
 }
 
+function ProfileCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.16" />
+      <path d="M12 12.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" fill="currentColor" opacity="0.9" />
+      <path d="M6.8 18.2c.9-2.3 2.7-3.5 5.2-3.5s4.3 1.2 5.2 3.5" fill="currentColor" opacity="0.9" />
+    </svg>
+  );
+}
+
+function PasswordCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <rect x="4" y="9" width="16" height="11" rx="3" fill="currentColor" opacity="0.16" />
+      <path d="M8 9V7.6C8 5.1 9.5 3.5 12 3.5s4 1.6 4 4.1V9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="m9.4 14.7 1.8 1.8 3.6-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SupportIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M18 2H6C4.34 2 3 3.33 3 4.97V15.88C3 17.52 4.34 18.85 6 18.85H6.76C7.56 18.85 8.32 19.16 8.88 19.72L10.59 21.41C11.37 22.18 12.64 22.18 13.42 21.41L15.13 19.72C15.69 19.16 16.46 18.85 17.25 18.85H18C19.66 18.85 21 17.52 21 15.88V4.97C21 3.33 19.66 2 18 2ZM10.38 13.01C10.79 13.01 11.13 13.35 11.13 13.76C11.13 14.17 10.79 14.51 10.38 14.51H7.7C7.26 14.51 6.85 14.3 6.59 13.94C6.34 13.6 6.28 13.18 6.4 12.78C6.75 11.71 7.61 11.13 8.37 10.61C9.17 10.07 9.62 9.73 9.62 9.15C9.62 8.63 9.2 8.21 8.68 8.21C8.16 8.21 7.75 8.64 7.75 9.16C7.75 9.57 7.41 9.91 7 9.91C6.59 9.91 6.25 9.57 6.25 9.16C6.25 7.82 7.34 6.72 8.69 6.72C10.04 6.72 11.13 7.81 11.13 9.16C11.13 10.57 10.07 11.29 9.22 11.87C8.69 12.23 8.19 12.57 7.94 13.02H10.38V13.01ZM17 13.08H16.79V13.77C16.79 14.18 16.45 14.52 16.04 14.52C15.63 14.52 15.29 14.18 15.29 13.77V13.08H13.33C13.33 13.08 13.33 13.08 13.32 13.08C12.83 13.08 12.38 12.82 12.13 12.4C11.88 11.97 11.88 11.44 12.13 11.02C12.81 9.85 13.6 8.52 14.32 7.36C14.64 6.85 15.25 6.62 15.82 6.78C16.39 6.95 16.79 7.47 16.78 8.07V11.59H17C17.41 11.59 17.75 11.93 17.75 12.34C17.75 12.75 17.41 13.08 17 13.08Z"
+        fill="currentColor"
+      />
+      <path
+        d="M15.2891 11.5796V8.63965C14.6991 9.59965 14.0891 10.6296 13.5391 11.5696H15.2891V11.5796Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 function SettingsIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
@@ -1866,6 +2573,69 @@ function FilterIcon({ className }: { className?: string }) {
       <path d="M5 7h8M17 7h2M11 17h8M5 17h2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
       <circle cx="15" cy="7" r="2" stroke="currentColor" strokeWidth="1.7" />
       <circle cx="9" cy="17" r="2" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+function DocumentDownloadIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M9 11v6l2-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m9 17-2-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 10v5c0 5-2 7-7 7H9c-5 0-7-2-7-7V9c0-5 2-7 7-7h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 10h-4c-3 0-4-1-4-4V2l8 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TuneIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M3 7h6M15 7h6M12 7a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 17h6M15 17h6M18 17a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronUpIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="m6 15 6-6 6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ClipboardTextIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M9 5.5h6M9.6 3h4.8c1 0 1.6.6 1.6 1.6v1.8c0 1-.6 1.6-1.6 1.6H9.6C8.6 8 8 7.4 8 6.4V4.6C8 3.6 8.6 3 9.6 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 5h1.5C19.4 5 20 6.1 20 7.8V18c0 2.5-1.5 3-3 3H7c-1.5 0-3-.5-3-3V7.8C4 6.1 4.6 5 6.5 5H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M21.4 2.6 10.9 13.1M21.4 2.6l-6.7 18.1-3.8-7.6-7.6-3.8L21.4 2.6Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function InfoCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="white" opacity="0.85" />
+      <path d="M12 10.5v5M12 8.2h.01" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

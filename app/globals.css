@@ -98,6 +98,14 @@ input {
   box-shadow: rgba(0, 0, 0, 0.4) 1px 2px 2px;
 }
 
+.login-figma-bg {
+  background:
+    linear-gradient(148deg, rgba(255, 255, 255, 0) 0 28%, rgba(255, 255, 255, 0.82) 39%, rgba(255, 255, 255, 0.96) 51%, rgba(255, 255, 255, 0.7) 62%, rgba(255, 255, 255, 0) 75%),
+    radial-gradient(ellipse 106% 78% at 0% 0%, rgba(218, 82, 117, 0.92) 0%, rgba(225, 112, 139, 0.74) 28%, rgba(237, 166, 184, 0.42) 48%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(ellipse 98% 72% at 100% 100%, rgba(218, 82, 117, 0.95) 0%, rgba(225, 112, 139, 0.76) 31%, rgba(237, 166, 184, 0.42) 50%, rgba(255, 255, 255, 0) 74%),
+    #f8f8f9;
+}
+
 .styled-form:hover {
   transform: translateX(-0.5em) translateY(-0.5em);
   border: 1px solid #171717;
@@ -175,4 +183,75 @@ input {
   transition: 0.2s;
   transform: translateX(0em) translateY(0em);
   box-shadow: none;
+}
+
+/* Custom Checkbox Styles */
+.checkbox-styled-wrapper .checkbox-container input {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  z-index: 1;
+}
+
+.checkbox-styled-wrapper .checkbox-container {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  user-select: none;
+}
+
+.checkbox-styled-wrapper .checkmark {
+  position: relative;
+  top: 0;
+  left: 0;
+  height: 2.3em;
+  width: 2.3em;
+  background-color: #ccc;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+.checkbox-styled-wrapper .checkmark:hover {
+  box-shadow:
+    inset 17px 17px 16px #b3b3b3,
+    inset -17px -17px 16px #ffffff;
+}
+
+.checkbox-styled-wrapper .checkbox-container input:checked ~ .checkmark {
+  box-shadow: none;
+  background-color: limegreen;
+  transform: rotateX(360deg);
+}
+
+.checkbox-styled-wrapper .checkbox-container input:checked ~ .checkmark:hover {
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-styled-wrapper .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.checkbox-styled-wrapper .checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.checkbox-styled-wrapper .checkbox-container .checkmark:after {
+  left: 0.96em;
+  top: 0.7em;
+  width: 0.25em;
+  height: 0.5em;
+  border: solid white;
+  border-width: 0 0.15em 0.15em 0;
+  box-shadow: 0.1em 0.1em 0em 0 rgba(0, 0, 0, 0.3);
+  transform: rotate(45deg);
 }
