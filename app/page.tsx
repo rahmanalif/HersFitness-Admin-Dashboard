@@ -39,7 +39,7 @@ const metricCards = [
     warning: true,
   },
   {
-    id: "members-metric",
+    id: "members",
     title: "Total Member",
     value: "40,543",
     trend: "+3.5%",
@@ -53,6 +53,7 @@ const metricCards = [
     trendTone: "text-[#16a34a]",
   },
   {
+    id: "overview",
     title: "Bookings This Week",
     value: "30,543",
     trend: "+3.5%",
@@ -404,9 +405,10 @@ const supportTickets = [
     status: "New",
     title: "Auto-Approve Bookings",
     date: "15 May 26 8:00 pm",
-    replies: "1 reply",
+    replies: "",
     expanded: false,
     comments: [],
+    replyBox: true,
   },
   {
     id: "T-001",
@@ -489,7 +491,7 @@ export default function Home() {
           onLogout={() => setIsSignedIn(false)}
         />
         <div className="flex min-h-0 min-w-0 flex-col">
-          <Topbar />
+          <Topbar onNavigate={setActiveSection} />
           <section
             aria-labelledby={`${activeSection}-title`}
             className={cn(
@@ -497,7 +499,7 @@ export default function Home() {
               activeSection === "verification" ? "py-4" : "py-6",
             )}
           >
-            {activeSection === "overview" ? <OverviewSection /> : null}
+            {activeSection === "overview" ? <OverviewSection onNavigate={setActiveSection} /> : null}
             {activeSection === "members" ? (
               <MemberSection onOpenMemberDetails={setSelectedMember} />
             ) : null}
@@ -626,7 +628,11 @@ function SignInScreen({
   );
 }
 
-function OverviewSection() {
+function OverviewSection({
+  onNavigate,
+}: {
+  onNavigate: (section: DashboardSection) => void;
+}) {
   return (
     <>
       <h1 id="overview-title" className="sr-only">
@@ -637,7 +643,11 @@ function OverviewSection() {
         className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
       >
         {metricCards.map((metric) => (
-          <MetricCard key={metric.title} {...metric} />
+          <MetricCard
+            key={metric.title}
+            {...metric}
+            onClick={() => onNavigate(metric.id as DashboardSection)}
+          />
         ))}
       </section>
       <section
@@ -830,7 +840,11 @@ function SidebarLink({
   );
 }
 
-function Topbar() {
+function Topbar({
+  onNavigate,
+}: {
+  onNavigate: (section: DashboardSection) => void;
+}) {
   return (
     <header className="flex min-h-[108px] flex-col gap-4 border-b border-[#e0e0e0] px-6 py-[18px] md:flex-row md:items-center md:justify-between lg:px-8">
       <div className="relative w-full max-w-[498px]">
@@ -840,9 +854,10 @@ function Topbar() {
       <div className="flex items-center gap-8">
         <BellButton />
         <div className="h-[52px] w-px bg-[#e0e0e0]" aria-hidden="true" />
-        <a
-          href="#profile"
-          className="flex items-center gap-2 px-[18px] py-3 text-lg font-medium leading-7 text-[#1f1f1f]"
+        <button
+          type="button"
+          onClick={() => onNavigate("settings")}
+          className="flex items-center gap-2 rounded-lg px-[18px] py-3 text-lg font-medium leading-7 text-[#1f1f1f] transition-colors hover:bg-[#fdf2f4] hover:text-[#f7869a] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
         >
           <Image
             src="/figma-assets/heba-avatar.png"
@@ -852,7 +867,7 @@ function Topbar() {
             className="size-12 rounded-full object-cover"
           />
           <span>Heba Eid</span>
-        </a>
+        </button>
       </div>
     </header>
   );
@@ -877,6 +892,7 @@ function MetricCard({
   trend,
   trendTone,
   warning,
+  onClick,
 }: {
   id?: string;
   title: string;
@@ -884,35 +900,43 @@ function MetricCard({
   trend?: string;
   trendTone?: string;
   warning?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <Card
       id={id}
       className={cn(
-        "min-h-[136px] scroll-mt-28 border-[0.5px] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
+        "group relative min-h-[136px] scroll-mt-28 cursor-pointer overflow-hidden border-[0.5px] p-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
         warning
-          ? "border-[#fef3c7] bg-[rgba(217,119,6,0.1)]"
-          : "border-[rgba(247,134,154,0.3)] bg-[rgba(247,134,154,0.1)]",
+          ? "border-[#fef3c7] bg-[rgba(217,119,6,0.1)] hover:border-[#fbbf24]"
+          : "border-[rgba(247,134,154,0.3)] bg-[rgba(247,134,154,0.1)] hover:border-[#f7869a]",
       )}
+      onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-[14px]">
-          <p className="text-base font-medium leading-6 text-[#7a7a7a]">
-            {title}
-          </p>
-          <p className="text-[32px] font-bold leading-none text-[#121212]">
-            {value}
-          </p>
-          {trend ? (
-            <p className="text-base font-medium leading-6 text-[#4a4a4a]">
-              <span className={trendTone}>{trend}</span> than last month
+      <button
+        type="button"
+        className="flex h-full w-full flex-col p-6 text-left outline-none"
+        aria-label={`Navigate to ${title}`}
+      >
+        <div className="flex w-full items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-[14px]">
+            <p className="text-base font-medium leading-6 text-[#7a7a7a]">
+              {title}
             </p>
-          ) : null}
+            <p className="text-[32px] font-bold leading-none text-[#121212]">
+              {value}
+            </p>
+            {trend ? (
+              <p className="text-base font-medium leading-6 text-[#4a4a4a]">
+                <span className={trendTone}>{trend}</span> than last month
+              </p>
+            ) : null}
+          </div>
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white transition-all duration-300 group-hover:bg-[#f7869a] group-hover:text-white group-hover:shadow-md">
+            <ArrowUpRightIcon className="size-6" />
+          </span>
         </div>
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white">
-          <ArrowUpRightIcon className="size-6" />
-        </span>
-      </div>
+      </button>
     </Card>
   );
 }
@@ -1560,10 +1584,7 @@ function VerificationSection() {
             <h2 className="text-2xl font-medium leading-8 tracking-[0.12px] text-[#1e293b]">
               Verifications
             </h2>
-            <p className="truncate text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
-              Nice work! You&apos;re currently averaging a 12-hour turnaround
-              time this week.
-            </p>
+            
           </div>
           <div className="relative">
             <button
@@ -1707,6 +1728,15 @@ function VerificationDetail({ label, value }: { label: string; value: string }) 
 }
 
 function TransactionsSection() {
+  const [filter, setFilter] = useState<"All" | "Completed" | "Processing" | "Pending">("All");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const filteredTransactions = transactions.filter((transaction) => {
+    if (filter === "All") return true;
+    return transaction.status === filter;
+  });
+
   return (
     <section
       id="transactions"
@@ -1729,19 +1759,42 @@ function TransactionsSection() {
 
           <button
             type="button"
+            onClick={() => setIsExportModalOpen(true)}
             className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
           >
             <DocumentDownloadIcon className="size-6" />
             Export CSV
           </button>
 
-          <button
-            type="button"
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-          >
-            <TuneIcon className="size-6" />
-            Filter
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+            >
+              <TuneIcon className="size-6" />
+              Filter: {filter}
+            </button>
+            {isDropdownOpen && (
+              <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-lg border border-[#e0e0e0] bg-white p-1 shadow-lg ring-1 ring-black/5">
+                {(["All", "Completed", "Processing", "Pending"] as const).map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      setFilter(option);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center px-3 py-2 text-sm rounded-md transition-colors font-medium",
+                      filter === option ? "bg-[#fdf2f4] text-[#f7869a]" : "text-[#4a4a4a] hover:bg-[#f7f7f7]"
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[#c4cdd5]">
@@ -1762,7 +1815,7 @@ function TransactionsSection() {
                 </tr>
               </thead>
               <tbody className="font-['Public_Sans',Arial,sans-serif]">
-                {transactions.map((transaction, index) => (
+                {filteredTransactions.map((transaction, index) => (
                   <tr key={`${transaction.id}-${transaction.date}-${index}`} className="h-[52px] bg-white">
                     <TransactionCell>{transaction.id}</TransactionCell>
                     <TransactionCell className="font-sans tracking-[0.07px]">{transaction.date}</TransactionCell>
@@ -1790,7 +1843,130 @@ function TransactionsSection() {
           <TablePagination />
         </div>
       </Card>
+      {isExportModalOpen && (
+        <ExportCSVModal
+          data={filteredTransactions}
+          onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
     </section>
+  );
+}
+
+function ExportCSVModal({
+  data,
+  onClose,
+}: {
+  data: typeof transactions;
+  onClose: () => void;
+}) {
+  const handleExport = () => {
+    const headers = ["Transaction ID", "Date", "Pay By", "Amount", "Fee", "Trainer Get", "Status"];
+    const csvContent = [
+      headers.join(","),
+      ...data.map((row) =>
+        [
+          row.id,
+          row.date,
+          `"${row.payBy} (${row.payBySub})"`,
+          row.amount.replace("$", "").trim(),
+          row.fee,
+          row.trainerGet.replace("$", "").trim(),
+          row.status,
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `transactions_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+        className="flex max-h-[90vh] w-full max-w-[800px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_25px_25px_rgba(0,0,0,0.25)]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="flex h-[77px] shrink-0 items-center justify-between border-b border-[#f3f4f6] px-6">
+          <h2
+            id="export-modal-title"
+            className="text-xl font-medium leading-7 tracking-[0.1px] text-[#101828]"
+          >
+            Export Preview
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-full text-[#101828] transition-colors hover:bg-[#f7f7f7] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+            aria-label="Close export modal"
+          >
+            <CloseIcon className="size-6" />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-auto p-6">
+          <div className="rounded-lg border border-[#c4cdd5]">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-[#f7f7f7]">
+                <tr>
+                  {["ID", "Date", "Pay By", "Amount", "Status"].map((h) => (
+                    <th key={h} className="border-b border-[#e0e0e0] px-4 py-3 font-semibold text-[#4a4a4a]">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, i) => (
+                  <tr key={i} className="border-b border-dashed border-[#c4cdd5]">
+                    <td className="px-4 py-3 text-[#1c252e]">{row.id}</td>
+                    <td className="px-4 py-3 text-[#1c252e]">{row.date}</td>
+                    <td className="px-4 py-3 text-[#1c252e]">{row.payBy}</td>
+                    <td className="px-4 py-3 text-[#1c252e]">{row.amount}</td>
+                    <td className="px-4 py-3">
+                      <TransactionStatusBadge status={row.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-[#f3f4f6] bg-white px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-11 rounded-lg border border-[#e0e0e0] px-6 text-sm font-medium text-[#4a4a4a] hover:bg-[#f7f7f7]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-black px-6 text-sm font-medium text-white hover:bg-[#121212] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)]"
+          >
+            <DocumentDownloadIcon className="size-5" />
+            Download CSV
+          </button>
+        </footer>
+      </section>
+    </div>
   );
 }
 
@@ -1874,9 +2050,11 @@ function SupportTicketCard({
 }: {
   ticket: (typeof supportTickets)[number];
 }) {
+  const [isExpanded, setIsExpanded] = useState(ticket.expanded);
+
   return (
     <article className="rounded-xl border border-[#e2e8f0] bg-white p-3">
-      <div className={cn("flex flex-col gap-3", ticket.expanded ? "pb-3" : "")}>
+      <div className={cn("flex flex-col gap-3", isExpanded ? "pb-3" : "")}>
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <span className="shrink-0 text-sm font-normal leading-5 tracking-[0.07px] text-[#4a4a68]">
@@ -1891,10 +2069,11 @@ function SupportTicketCard({
           ) : null}
           <button
             type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
             className="flex size-6 shrink-0 items-center justify-center rounded-md text-[#33358e] hover:bg-[#f7f7f7] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-            aria-label={ticket.expanded ? "Collapse support ticket" : "Expand support ticket"}
+            aria-label={isExpanded ? "Collapse support ticket" : "Expand support ticket"}
           >
-            {ticket.expanded ? (
+            {isExpanded ? (
               <ChevronUpIcon className="size-6" />
             ) : (
               <ChevronDownIcon className="size-6" />
@@ -1913,7 +2092,7 @@ function SupportTicketCard({
         </div>
       </div>
 
-      {ticket.expanded ? (
+      {isExpanded ? (
         <div className="border-t border-[#e9eef4] pt-4">
           <div className="flex flex-col gap-4">
             {ticket.comments.map((comment, index) => (
@@ -2028,7 +2207,7 @@ function SupportResolvedAlert() {
 }
 
 function SettingsSection() {
-  const [settingsTab, setSettingsTab] = useState<"profile" | "password">("profile");
+  const [settingsTab, setSettingsTab] = useState<"profile" | "password" | "faq" | "privacy" | "terms">("profile");
 
   return (
     <section
@@ -2062,11 +2241,25 @@ function SettingsSection() {
             <PasswordCheckIcon className="size-6" />
           </SettingsIconButton>
           <SettingsIconButton
-            label="Account profile"
-            active={false}
-            onClick={() => setSettingsTab("profile")}
+            label="FAQ"
+            active={settingsTab === "faq"}
+            onClick={() => setSettingsTab("faq")}
           >
-            <ProfileCircleIcon className="size-6" />
+            <InfoCircleIcon className="size-6" />
+          </SettingsIconButton>
+          <SettingsIconButton
+            label="Privacy Policy"
+            active={settingsTab === "privacy"}
+            onClick={() => setSettingsTab("privacy")}
+          >
+            <ShieldIcon className="size-6" />
+          </SettingsIconButton>
+          <SettingsIconButton
+            label="Terms & Conditions"
+            active={settingsTab === "terms"}
+            onClick={() => setSettingsTab("terms")}
+          >
+            <DocumentNormalIcon className="size-6" />
           </SettingsIconButton>
         </div>
       </aside>
@@ -2074,6 +2267,9 @@ function SettingsSection() {
       <div className="min-h-0 overflow-auto pl-6 pr-0">
         {settingsTab === "profile" ? <ProfileSettingsPanel /> : null}
         {settingsTab === "password" ? <PasswordSettingsPanel /> : null}
+        {settingsTab === "faq" ? <FAQSettingsPanel /> : null}
+        {settingsTab === "privacy" ? <PrivacySettingsPanel /> : null}
+        {settingsTab === "terms" ? <TermsSettingsPanel /> : null}
       </div>
     </section>
   );
@@ -2141,6 +2337,142 @@ function PasswordSettingsPanel() {
         </div>
       </div>
     </SettingsPanel>
+  );
+}
+
+function FAQSettingsPanel() {
+  const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>([
+    { question: "", answer: "" },
+  ]);
+
+  const addFaq = () => {
+    setFaqs([...faqs, { question: "", answer: "" }]);
+  };
+
+  const removeFaq = (index: number) => {
+    setFaqs(faqs.filter((_, i) => i !== index));
+  };
+
+  const updateFaq = (index: number, field: "question" | "answer", value: string) => {
+    const newFaqs = [...faqs];
+    newFaqs[index][field] = value;
+    setFaqs(newFaqs);
+  };
+
+  return (
+    <SettingsPanel
+      icon={<InfoCircleIcon className="size-6 text-[#e06f83]" />}
+      title="Frequently Asked Questions"
+      actionLabel="Save FAQ Changes"
+    >
+      <div className="flex flex-col gap-4 rounded-lg bg-white p-3">
+        {faqs.map((faq, index) => (
+          <div key={index} className="flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 flex flex-col gap-4">
+                <SettingsTextArea
+                  label={`Question ${index + 1}`}
+                  placeholder="Enter question"
+                  value={faq.question}
+                  onChange={(e) => updateFaq(index, "question", e.target.value)}
+                />
+                <SettingsTextArea
+                  label={`Answer ${index + 1}`}
+                  placeholder="Enter answer"
+                  value={faq.answer}
+                  onChange={(e) => updateFaq(index, "answer", e.target.value)}
+                />
+              </div>
+              {faqs.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeFaq(index)}
+                  className="mt-8 flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#fee2e2] bg-[#fff5f5] text-[#dc2626] transition-colors hover:bg-[#fee2e2]"
+                  title="Remove FAQ"
+                >
+                  <TrashIcon className="size-5" />
+                </button>
+              )}
+            </div>
+            {index < faqs.length - 1 && <hr className="border-[#f2f2f2]" />}
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addFaq}
+          className="flex h-12 items-center justify-center gap-2 rounded-lg border border-dashed border-[#f7869a] bg-[#fdf2f4] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-[#e06f83] transition-colors hover:bg-[#f9e8ec]"
+        >
+          <PlusIcon className="size-5" />
+          Add More Question
+        </button>
+      </div>
+    </SettingsPanel>
+  );
+}
+
+function PrivacySettingsPanel() {
+  return (
+    <SettingsPanel
+      icon={<ShieldIcon className="size-6 text-[#e06f83]" />}
+      title="Privacy Policy"
+      actionLabel="Save Privacy Policy"
+    >
+      <div className="rounded-lg bg-white p-3">
+        <SettingsTextArea
+          label="Privacy Policy Content"
+          placeholder="Enter the privacy policy text here..."
+          rows={10}
+        />
+      </div>
+    </SettingsPanel>
+  );
+}
+
+function TermsSettingsPanel() {
+  return (
+    <SettingsPanel
+      icon={<DocumentNormalIcon className="size-6 text-[#e06f83]" />}
+      title="Terms & Conditions"
+      actionLabel="Save Terms & Conditions"
+    >
+      <div className="rounded-lg bg-white p-3">
+        <SettingsTextArea
+          label="Terms & Conditions Content"
+          placeholder="Enter the terms and conditions text here..."
+          rows={10}
+        />
+      </div>
+    </SettingsPanel>
+  );
+}
+
+function SettingsTextArea({
+  label,
+  placeholder,
+  rows = 3,
+  value,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  rows?: number;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-base font-medium leading-6 tracking-[0.08px] text-[#121212]">
+        {label}
+      </span>
+      <textarea
+        placeholder={placeholder}
+        rows={rows}
+        value={value}
+        onChange={onChange}
+        className="rounded-lg border border-[#cbd5ed] bg-white px-4 py-3 text-base font-normal leading-6 tracking-[0.08px] text-[#121212] outline-none placeholder:text-[#7a7a7a] focus:border-[#f7869a] focus:ring-4 focus:ring-[#f7869a]/15"
+      />
+    </label>
   );
 }
 
@@ -2397,7 +2729,77 @@ function PasswordCheckIcon({ className }: { className?: string }) {
   );
 }
 
-function SupportIcon({ className }: { className?: string }) {
+function SupportIcon({ className, active }: { className?: string; active?: boolean }) {
+  const viewBox = "8 8 22 24";
+  if (active) {
+    return (
+      <svg
+        viewBox={viewBox}
+        fill="none"
+        className={className}
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M25 26.85H24.24C23.44 26.85 22.68 27.16 22.12 27.72L20.41 29.41C19.63 30.18 18.36 30.18 17.58 29.41L15.87 27.72C15.31 27.16 14.54 26.85 13.75 26.85H13C11.34 26.85 10 25.52 10 23.88V12.97C10 11.33 11.34 10 13 10H25C26.66 10 28 11.33 28 12.97V23.88C28 25.51 26.66 26.85 25 26.85Z"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeMiterlimit="10"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 17.15C14 16.22 14.76 15.46 15.69 15.46C16.62 15.46 17.38 16.22 17.38 17.15C17.38 19.03 14.71 19.23 14.12 21.02C14 21.39 14.31 21.76 14.7 21.76H17.38"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M23.0398 21.7501V16.0401C23.0398 15.7801 22.8698 15.5501 22.6198 15.4801C22.3698 15.4101 22.0998 15.5101 21.9598 15.7301C21.2398 16.8901 20.4598 18.2101 19.7798 19.3701C19.6698 19.5601 19.6698 19.8101 19.7798 20.0001C19.8898 20.1901 20.0998 20.31 20.3298 20.31H23.9998"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      viewBox={viewBox}
+      fill="none"
+      className={className}
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M25 26.85H24.24C23.44 26.85 22.68 27.16 22.12 27.72L20.41 29.41C19.63 30.18 18.36 30.18 17.58 29.41L15.87 27.72C15.31 27.16 14.54 26.85 13.75 26.85H13C11.34 26.85 10 25.52 10 23.88V12.97C10 11.33 11.34 10 13 10H25C26.66 10 28 11.33 28 12.97V23.88C28 25.51 26.66 26.85 25 26.85Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 17.15C14 16.22 14.76 15.46 15.69 15.46C16.62 15.46 17.38 16.22 17.38 17.15C17.38 19.03 14.71 19.23 14.12 21.02C14 21.39 14.31 21.76 14.7 21.76H17.38"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M23.0398 21.7501V16.0401C23.0398 15.7801 22.8698 15.5501 22.6198 15.4801C22.3698 15.4101 22.0998 15.5101 21.9598 15.7301C21.2398 16.8901 20.4598 18.2101 19.7798 19.3701C19.6698 19.5601 19.6698 19.8101 19.7798 20.0001C19.8898 20.1901 20.0998 20.31 20.3298 20.31H23.9998"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SettingsIcon({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -2407,22 +2809,21 @@ function SupportIcon({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M18 2H6C4.34 2 3 3.33 3 4.97V15.88C3 17.52 4.34 18.85 6 18.85H6.76C7.56 18.85 8.32 19.16 8.88 19.72L10.59 21.41C11.37 22.18 12.64 22.18 13.42 21.41L15.13 19.72C15.69 19.16 16.46 18.85 17.25 18.85H18C19.66 18.85 21 17.52 21 15.88V4.97C21 3.33 19.66 2 18 2ZM10.38 13.01C10.79 13.01 11.13 13.35 11.13 13.76C11.13 14.17 10.79 14.51 10.38 14.51H7.7C7.26 14.51 6.85 14.3 6.59 13.94C6.34 13.6 6.28 13.18 6.4 12.78C6.75 11.71 7.61 11.13 8.37 10.61C9.17 10.07 9.62 9.73 9.62 9.15C9.62 8.63 9.2 8.21 8.68 8.21C8.16 8.21 7.75 8.64 7.75 9.16C7.75 9.57 7.41 9.91 7 9.91C6.59 9.91 6.25 9.57 6.25 9.16C6.25 7.82 7.34 6.72 8.69 6.72C10.04 6.72 11.13 7.81 11.13 9.16C11.13 10.57 10.07 11.29 9.22 11.87C8.69 12.23 8.19 12.57 7.94 13.02H10.38V13.01ZM17 13.08H16.79V13.77C16.79 14.18 16.45 14.52 16.04 14.52C15.63 14.52 15.29 14.18 15.29 13.77V13.08H13.33C13.33 13.08 13.33 13.08 13.32 13.08C12.83 13.08 12.38 12.82 12.13 12.4C11.88 11.97 11.88 11.44 12.13 11.02C12.81 9.85 13.6 8.52 14.32 7.36C14.64 6.85 15.25 6.62 15.82 6.78C16.39 6.95 16.79 7.47 16.78 8.07V11.59H17C17.41 11.59 17.75 11.93 17.75 12.34C17.75 12.75 17.41 13.08 17 13.08Z"
-        fill="currentColor"
+        d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
-        d="M15.2891 11.5796V8.63965C14.6991 9.59965 14.0891 10.6296 13.5391 11.5696H15.2891V11.5796Z"
-        fill="currentColor"
+        d="M2 12.8804V11.1204C2 10.0804 2.85 9.22043 3.9 9.22043C5.71 9.22043 6.45 7.94042 5.54 6.37042C5.02 5.47042 5.33 4.30042 6.24 3.78042L7.97 2.79042C8.76 2.32042 9.78 2.60042 10.25 3.39042L10.36 3.58042C11.26 5.15042 12.74 5.15042 13.65 3.58042L13.76 3.39042C14.23 2.60042 15.25 2.32042 16.04 2.79042L17.77 3.78042C18.68 4.30042 18.99 5.47042 18.47 6.37042C17.56 7.94042 18.3 9.22043 20.11 9.22043C21.15 9.22043 22.01 10.0704 22.01 11.1204V12.8804C22.01 13.9204 21.16 14.7804 20.11 14.7804C18.3 14.7804 17.56 16.0604 18.47 17.6304C18.99 18.5404 18.68 19.7004 17.77 20.2204L16.04 21.2104C15.25 21.6804 14.23 21.4004 13.76 20.6104L13.65 20.4204C12.75 18.8504 11.27 18.8504 10.36 20.4204L10.25 20.6104C9.78 21.4004 8.76 21.6804 7.97 21.2104L6.24 20.2204C5.33 19.7004 5.02 18.5304 5.54 17.6304C6.45 16.0604 5.71 14.7804 3.9 14.7804C2.85 14.7804 2 13.9204 2 12.8804Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function SettingsIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M19.4 15a8.2 8.2 0 0 0 .1-1l2-1.5-2-3.4-2.4 1a7.8 7.8 0 0 0-1.7-1L15 6.5h-4l-.4 2.6c-.6.3-1.2.6-1.7 1l-2.4-1-2 3.4 2 1.5a8.2 8.2 0 0 0 .1 2l-2 1.5 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.5c0-.3-.1-.6-.2-1Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -2704,6 +3105,22 @@ function EyeSlashIcon({ className }: { className?: string }) {
       <path d="M15.51 12.7C15.25 14.11 14.1 15.26 12.69 15.52" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M9.47 14.53L2 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M22 2L14.53 9.47" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M3 6h18M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
