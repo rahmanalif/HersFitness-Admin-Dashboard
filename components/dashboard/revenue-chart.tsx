@@ -60,13 +60,13 @@ export function RevenueChart() {
   }, [data, range]);
 
   return (
-    <Card className="h-[450px] rounded-[10px] border-[#e0e0e0] bg-white p-5 shadow-none xl:col-span-2">
-      <CardHeader className="mb-5 flex-row items-start justify-between gap-4">
-        <h2 className="text-2xl font-medium leading-8 text-[#121212]">
+    <Card className="min-h-[430px] rounded-[10px] border-[#e0e0e0] bg-white p-4 shadow-none sm:min-h-[450px] sm:p-5 xl:col-span-2">
+      <CardHeader className="mb-4 flex flex-col items-start justify-between gap-4 sm:mb-5 sm:flex-row">
+        <h2 className="text-xl font-medium leading-7 text-[#121212] sm:text-2xl sm:leading-8">
           Hiring & Revenue
         </h2>
         <div
-          className="flex rounded-[14px] bg-white p-1 shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+          className="flex w-full rounded-[14px] bg-white p-1 shadow-[0_1px_3px_rgba(0,0,0,0.1)] sm:w-auto"
           aria-label="Chart range"
           role="group"
         >
@@ -76,7 +76,7 @@ export function RevenueChart() {
               type="button"
               variant={range === item.value ? "default" : "ghost"}
               className={cn(
-                "h-10 rounded-[10px] px-3 text-sm",
+                "h-10 flex-1 rounded-[10px] px-2 text-sm sm:flex-none sm:px-3",
                 range === item.value
                   ? "bg-[#f7869a] text-white hover:bg-[#f7869a]"
                   : "hover:bg-[#fdf2f4]",
@@ -90,49 +90,75 @@ export function RevenueChart() {
           ))}
         </div>
       </CardHeader>
-      <CardContent className="grid h-85 grid-cols-[30px_minmax(0,1fr)_23px] grid-rows-[1fr_24px]">
-        <AxisLabels labels={["40k", "30k", "20k", "10k", "0k"]} />
-        <div className="relative border-b border-[rgba(0,0,26,0.3)]">
-          <div className="absolute inset-0 grid grid-rows-5">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <span
-                key={index}
-                className="border-t border-dashed border-[#d5d9e3]"
-              />
-            ))}
+      <CardContent className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2">
+        <div
+          className={cn(
+            "grid h-[300px] grid-cols-[30px_minmax(0,1fr)_23px] grid-rows-[1fr_24px] sm:h-85",
+            range === "7d" ? "min-w-[430px] sm:min-w-[600px]" : "min-w-[600px]",
+          )}
+        >
+          <AxisLabels labels={["40k", "30k", "20k", "10k", "0k"]} />
+          <div className="relative border-b border-[rgba(0,0,26,0.3)]">
+            <div className="absolute inset-0 grid grid-rows-5">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <span
+                  key={index}
+                  className="border-t border-dashed border-[#d5d9e3]"
+                />
+              ))}
+            </div>
+            <div
+              className="absolute inset-0 grid"
+              style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
+            >
+              {data.map((item) => (
+                <span
+                  key={item.label}
+                  className="border-l border-dashed border-[#d5d9e3]"
+                />
+              ))}
+            </div>
+            <div className="relative flex h-full items-end">
+              {data.map((item, index) => (
+                <ChartBar
+                  key={item.label}
+                  item={item}
+                  compact={range === "30d"}
+                  tooltipAlign={
+                    index === 0
+                      ? "start"
+                      : index === data.length - 1
+                        ? "end"
+                        : "center"
+                  }
+                />
+              ))}
+            </div>
           </div>
-          <div
-            className="absolute inset-0 grid"
-            style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
-          >
+          <AxisLabels labels={["40", "30", "20", "10", "0"]} />
+          <div />
+          <div className="flex pl-[29px] text-center text-xs leading-4 text-[#7a7a7a]">
             {data.map((item) => (
-              <span
-                key={item.label}
-                className="border-l border-dashed border-[#d5d9e3]"
-              />
+              <span key={item.label} className="flex-1">
+                {visibleLabels.has(item.label) ? item.label : ""}
+              </span>
             ))}
           </div>
-          <div className="relative flex h-full items-end">
-            {data.map((item) => (
-              <ChartBar key={item.label} item={item} compact={range === "30d"} />
-            ))}
-          </div>
-        </div>
-        <AxisLabels labels={["40", "30", "20", "10", "0"]} />
-        <div />
-        <div className="flex pl-[29px] text-center text-xs leading-4 text-[#7a7a7a]">
-          {data.map((item) => (
-            <span key={item.label} className="flex-1">
-              {visibleLabels.has(item.label) ? item.label : ""}
-            </span>
-          ))}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function ChartBar({ item, compact }: { item: ChartPoint; compact: boolean }) {
+function ChartBar({
+  item,
+  compact,
+  tooltipAlign,
+}: {
+  item: ChartPoint;
+  compact: boolean;
+  tooltipAlign: "start" | "center" | "end";
+}) {
   const revenueHeight = `${Math.max(2, (item.revenue / revenueMax) * 100)}%`;
   const hiresHeight = `${Math.max(2, (item.hires / hiresMax) * 100)}%`;
   const barWidth = compact ? "w-[15px] sm:w-[18px]" : "w-[47px]";
@@ -162,8 +188,15 @@ function ChartBar({ item, compact }: { item: ChartPoint; compact: boolean }) {
           />
         ) : null}
       </span>
-      <span className="pointer-events-none absolute -top-3.5 left-1/2 z-10 flex -translate-x-1/2 translate-y-1 flex-col items-center text-left text-xs leading-[18px] text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-        <span className="rounded-lg bg-[#f7869a] px-4 py-1 min-w-max">
+      <span
+        className={cn(
+          "pointer-events-none absolute top-2 z-10 flex translate-y-1 flex-col items-center text-left text-xs leading-[18px] text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100",
+          tooltipAlign === "start" && "left-1",
+          tooltipAlign === "center" && "left-1/2 -translate-x-1/2",
+          tooltipAlign === "end" && "right-1",
+        )}
+      >
+        <span className="min-w-[104px] rounded-lg bg-[#f7869a] px-3 py-1 shadow-[0_8px_18px_rgba(247,134,154,0.28)]">
           <span className="block">{item.label}</span>
           <span className="block">Rev :{item.revenue.toLocaleString()}</span>
           <span className="block">Hire : {item.hires}</span>

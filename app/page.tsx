@@ -477,6 +477,7 @@ export default function Home() {
     useState<(typeof members)[number] | null>(null);
   const [selectedTrainer, setSelectedTrainer] =
     useState<(typeof trainers)[number] | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (!isSignedIn) {
     return <SignInScreen onSignIn={() => setIsSignedIn(true)} />;
@@ -484,18 +485,31 @@ export default function Home() {
 
   return (
     <main className="h-screen overflow-hidden bg-white text-[#121212]">
-      <div className="grid h-screen lg:grid-cols-[272px_minmax(0,1fr)]">
+      <div className="flex h-screen overflow-hidden lg:grid lg:grid-cols-[272px_minmax(0,1fr)]">
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
         <Sidebar
           activeSection={activeSection}
-          onNavigate={setActiveSection}
+          onNavigate={(section) => {
+            setActiveSection(section);
+            setIsMobileMenuOpen(false);
+          }}
           onLogout={() => setIsSignedIn(false)}
+          isMobileMenuOpen={isMobileMenuOpen}
         />
-        <div className="flex min-h-0 min-w-0 flex-col">
-          <Topbar onNavigate={setActiveSection} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <Topbar
+            onNavigate={setActiveSection}
+            onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          />
           <section
             aria-labelledby={`${activeSection}-title`}
             className={cn(
-              "flex min-h-0 w-full flex-1 flex-col gap-6 overflow-hidden px-6 lg:px-8",
+              "flex min-h-0 w-full flex-1 flex-col gap-6 overflow-y-auto px-6 lg:px-8",
               activeSection === "verification" ? "py-4" : "py-6",
             )}
           >
@@ -665,13 +679,20 @@ function Sidebar({
   activeSection,
   onNavigate,
   onLogout,
+  isMobileMenuOpen,
 }: {
   activeSection: DashboardSection;
   onNavigate: (section: DashboardSection) => void;
   onLogout: () => void;
+  isMobileMenuOpen?: boolean;
 }) {
   return (
-    <aside className="flex h-screen overflow-hidden border-b border-[#e0e0e0] bg-white px-[18px] py-[30px] lg:flex-col lg:border-b-0 lg:border-r">
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col overflow-hidden border-r border-[#e0e0e0] bg-white px-[18px] py-[30px] transition-transform duration-300 lg:static lg:flex lg:translate-x-0",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+      )}
+    >
       <div className="flex min-h-0 w-full flex-1 flex-col gap-[27px]">
         <a className="mx-auto block h-[77px] w-[216px]" href="#overview">
           <Image
@@ -842,31 +863,49 @@ function SidebarLink({
 
 function Topbar({
   onNavigate,
+  onToggleMobileMenu,
 }: {
   onNavigate: (section: DashboardSection) => void;
+  onToggleMobileMenu?: () => void;
 }) {
   return (
-    <header className="flex min-h-[108px] flex-col gap-4 border-b border-[#e0e0e0] px-6 py-[18px] md:flex-row md:items-center md:justify-between lg:px-8">
-      <div className="relative w-full max-w-[498px]">
-        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-[#121212]" />
-        <Input aria-label="Search supplements" placeholder="Search supplements..." />
+    <header className="flex flex-col gap-4 border-b border-[#e0e0e0] px-6 py-4 md:flex-row md:items-center md:justify-between lg:min-h-[108px] lg:px-8">
+      <div className="flex w-full items-center gap-4 md:max-w-[498px]">
+        <button
+          type="button"
+          onClick={onToggleMobileMenu}
+          className="flex shrink-0 items-center justify-center rounded-lg p-2 text-[#121212] transition-colors hover:bg-[#f7f7f7] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 lg:hidden"
+          aria-label="Toggle menu"
+        >
+          <MenuIcon className="size-6" />
+        </button>
+        <div className="relative min-w-0 flex-1">
+          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-[#121212]" />
+          <Input
+            aria-label="Search supplements"
+            placeholder="Search supplements..."
+            className="w-full"
+          />
+        </div>
       </div>
-      <div className="flex items-center gap-8">
-        <BellButton />
-        <div className="h-[52px] w-px bg-[#e0e0e0]" aria-hidden="true" />
+      <div className="flex w-full items-center justify-between gap-4 md:w-auto md:justify-end md:gap-8">
+        <div className="flex items-center gap-4 md:gap-8">
+          <BellButton />
+          <div className="hidden h-[52px] w-px bg-[#e0e0e0] md:block" aria-hidden="true" />
+        </div>
         <button
           type="button"
           onClick={() => onNavigate("settings")}
-          className="flex items-center gap-2 rounded-lg px-[18px] py-3 text-lg font-medium leading-7 text-[#1f1f1f] transition-colors hover:bg-[#fdf2f4] hover:text-[#f7869a] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-lg font-medium leading-7 text-[#1f1f1f] transition-colors hover:bg-[#fdf2f4] hover:text-[#f7869a] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 md:px-[18px] md:py-3"
         >
           <Image
             src="/figma-assets/heba-avatar.png"
             alt=""
             width={48}
             height={48}
-            className="size-12 rounded-full object-cover"
+            className="size-10 rounded-full object-cover md:size-12"
           />
-          <span>Heba Eid</span>
+          <span className="truncate">Heba Eid</span>
         </button>
       </div>
     </header>
@@ -943,12 +982,12 @@ function MetricCard({
 
 function RecentActivity() {
   return (
-    <Card className="h-[360px] overflow-hidden rounded-[14px] border-[#e2e8f0] bg-white shadow-none">
-      <CardHeader className="gap-2 px-4 py-2.5 text-[#0f172a]">
+    <Card className="flex h-[450px] flex-col overflow-hidden rounded-[14px] border-[#e2e8f0] bg-white shadow-none lg:h-[450px]">
+      <CardHeader className="shrink-0 gap-2 px-4 py-2.5 text-[#0f172a]">
         <h2 className="text-base font-medium leading-6">Recent Activity</h2>
-        <p className="text-xs font-medium leading-4">Recent Activity</p>
+        <p className="text-xs font-medium leading-4 text-[#7a7a7a]">Latest updates and actions.</p>
       </CardHeader>
-      <CardContent id="logout" className="scroll-mt-28 pt-3">
+      <CardContent className="min-h-0 flex-1 overflow-y-auto pt-3">
         {activities.map(([title, person, time]) => (
           <article
             key={`${title}-${person}`}
@@ -997,7 +1036,7 @@ function MemberSection({
         Members
       </h2>
       <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border-[#c4cdd5] bg-white shadow-none">
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-auto">
           <table className="min-w-[900px] w-full border-collapse text-left font-['Public_Sans',Arial,sans-serif]">
             <thead>
               <tr className="h-[52px] bg-white text-sm font-semibold leading-[22px] tracking-[0.22px] text-[#1c252e]">
@@ -1500,7 +1539,7 @@ function TrainerSection({
         Trainers
       </h1>
       <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border-[#c4cdd5] bg-white shadow-none">
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full min-w-[980px] border-collapse text-left font-['Public_Sans',Arial,sans-serif]">
             <thead>
               <tr className="h-[52px] bg-white text-sm font-semibold leading-[22px] tracking-[0.22px] text-[#1c252e]">
@@ -1574,23 +1613,28 @@ function VerificationSection() {
   const list = filter === "members" ? pendingApprovals.members : pendingApprovals.trainers;
 
   return (
-    <div className="flex flex-col gap-6 min-h-0 flex-1 overflow-hidden">
-      <Card className="flex min-h-24 items-center rounded-2xl border-[#f2f2f2] bg-white p-[17px] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]">
-        <div className="flex w-full items-center gap-4">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(91deg,#f7869a_2%,#fbc3cc_100%)] text-white">
-            <CheckIcon className="size-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-2xl font-medium leading-8 tracking-[0.12px] text-[#1e293b]">
-              Verifications
-            </h2>
-            
+    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden">
+      <Card className="flex items-center rounded-2xl border-[#f2f2f2] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)] lg:min-h-24 lg:p-[17px]">
+        <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(91deg,#f7869a_2%,#fbc3cc_100%)] text-white">
+              <CheckIcon className="size-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-medium leading-8 tracking-[0.12px] text-[#1e293b] lg:text-2xl">
+                Verifications
+              </h2>
+            </div>
           </div>
+          <p className="truncate text-base font-normal leading-7 tracking-[0.09px] text-[#4a4a4a] lg:flex-1 lg:text-lg">
+            Nice work! You&apos;re currently averaging a 12-hour turnaround
+            time this week.
+          </p>
           <div className="relative">
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+              className="flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 lg:w-auto"
             >
               <FilterIcon className="size-6" />
               Filter: {filter === "members" ? "Members" : "Trainers"}
@@ -1744,56 +1788,58 @@ function TransactionsSection() {
       className="min-h-0 flex-1"
     >
       <Card className="flex h-full min-h-0 flex-col gap-[14px] overflow-hidden rounded-[14px] border-[#e3e6f0] bg-white px-3 py-3.5 shadow-none">
-        <div className="flex shrink-0 items-center gap-2.5">
+        <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center">
           <div className="min-w-0 flex-1">
             <h1
               id="transactions-title"
-              className="text-2xl font-medium leading-8 tracking-[0.12px] text-[#1e293b]"
+              className="text-xl font-medium leading-8 tracking-[0.12px] text-[#1e293b] lg:text-2xl"
             >
               Transactions
             </h1>
-            <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
+            <p className="text-base font-normal leading-7 tracking-[0.09px] text-[#4a4a4a] lg:text-lg">
               Financial overview and history.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsExportModalOpen(true)}
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-          >
-            <DocumentDownloadIcon className="size-6" />
-            Export CSV
-          </button>
-
-          <div className="relative">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex h-12 flex-1 shrink-0 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 lg:flex-none"
             >
-              <TuneIcon className="size-6" />
-              Filter: {filter}
+              <DocumentDownloadIcon className="size-6" />
+              Export CSV
             </button>
-            {isDropdownOpen && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-lg border border-[#e0e0e0] bg-white p-1 shadow-lg ring-1 ring-black/5">
-                {(["All", "Completed", "Processing", "Pending"] as const).map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => {
-                      setFilter(option);
-                      setIsDropdownOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center px-3 py-2 text-sm rounded-md transition-colors font-medium",
-                      filter === option ? "bg-[#fdf2f4] text-[#f7869a]" : "text-[#4a4a4a] hover:bg-[#f7f7f7]"
-                    )}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
+
+            <div className="relative flex-1 lg:flex-none">
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 lg:w-auto"
+              >
+                <TuneIcon className="size-6" />
+                Filter: {filter}
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-lg border border-[#e0e0e0] bg-white p-1 shadow-lg ring-1 ring-black/5">
+                  {(["All", "Completed", "Processing", "Pending"] as const).map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setFilter(option);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center px-3 py-2 text-sm rounded-md transition-colors font-medium",
+                        filter === option ? "bg-[#fdf2f4] text-[#f7869a]" : "text-[#4a4a4a] hover:bg-[#f7f7f7]"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2017,16 +2063,16 @@ function SupportSection() {
       className="min-h-0 flex-1 overflow-hidden"
     >
       <Card className="flex h-full min-h-0 flex-col gap-3 overflow-hidden rounded-xl border-[#d6e6f2] bg-white p-3.5 shadow-none">
-        <div className="flex shrink-0 items-center gap-2.5 px-2.5">
+        <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:px-2.5">
           <h1
             id="support-title"
-            className="min-w-0 flex-1 text-xl font-semibold leading-7 tracking-[0.1px] text-[#0f172a]"
+            className="min-w-0 flex-1 text-xl font-semibold leading-7 tracking-[0.1px] text-[#0f172a] lg:text-2xl"
           >
             Member
           </h1>
           <button
             type="button"
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 lg:w-auto"
           >
             <TuneIcon className="size-6" />
             Filter
@@ -2213,19 +2259,19 @@ function SettingsSection() {
     <section
       id="settings-panel"
       aria-labelledby="settings-title"
-      className="grid min-h-0 flex-1 grid-cols-[102px_minmax(0,1fr)] overflow-hidden"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[102px_minmax(0,1fr)]"
     >
       <aside
-        className="border-r border-[#f2f2f2] bg-white px-[31px] py-4"
+        className="shrink-0 overflow-x-auto border-b border-[#f2f2f2] bg-white px-4 py-4 lg:border-b-0 lg:border-r lg:px-[31px]"
         aria-label="Settings menu"
       >
         <h1
           id="settings-title"
-          className="px-2 text-xs font-medium leading-4 text-[#121212]"
+          className="hidden px-2 text-xs font-medium leading-4 text-[#121212] lg:block"
         >
           Setting
         </h1>
-        <div className="mt-2 flex flex-col gap-2">
+        <div className="flex gap-2 lg:mt-2 lg:flex-col">
           <SettingsIconButton
             label="Profile information"
             active={settingsTab === "profile"}
@@ -2264,7 +2310,7 @@ function SettingsSection() {
         </div>
       </aside>
 
-      <div className="min-h-0 overflow-auto pl-6 pr-0">
+      <div className="min-h-0 flex-1 overflow-auto py-6 lg:pl-6 lg:pr-0">
         {settingsTab === "profile" ? <ProfileSettingsPanel /> : null}
         {settingsTab === "password" ? <PasswordSettingsPanel /> : null}
         {settingsTab === "faq" ? <FAQSettingsPanel /> : null}
@@ -2290,7 +2336,7 @@ function SettingsIconButton({
     <button
       type="button"
       className={cn(
-        "flex size-12 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30",
+        "flex size-12 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30",
         active
           ? "bg-[#fdf2f4] text-[#e06f83]"
           : "text-[#4a4a4a] hover:bg-[#f7f7f7] hover:text-[#e06f83]",
@@ -2368,7 +2414,7 @@ function FAQSettingsPanel() {
       <div className="flex flex-col gap-4 rounded-lg bg-white p-3">
         {faqs.map((faq, index) => (
           <div key={index} className="flex flex-col gap-4">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1 flex flex-col gap-4">
                 <SettingsTextArea
                   label={`Question ${index + 1}`}
@@ -2384,14 +2430,16 @@ function FAQSettingsPanel() {
                 />
               </div>
               {faqs.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeFaq(index)}
-                  className="mt-8 flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#fee2e2] bg-[#fff5f5] text-[#dc2626] transition-colors hover:bg-[#fee2e2]"
-                  title="Remove FAQ"
-                >
-                  <TrashIcon className="size-5" />
-                </button>
+                <div className="flex justify-end lg:mt-8">
+                  <button
+                    type="button"
+                    onClick={() => removeFaq(index)}
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#fee2e2] bg-[#fff5f5] text-[#dc2626] transition-colors hover:bg-[#fee2e2]"
+                    title="Remove FAQ"
+                  >
+                    <TrashIcon className="size-5" />
+                  </button>
+                </div>
               )}
             </div>
             {index < faqs.length - 1 && <hr className="border-[#f2f2f2]" />}
@@ -2489,16 +2537,16 @@ function SettingsPanel({
 }) {
   return (
     <Card className="flex w-full flex-col gap-[18px] rounded-[14px] border-[#e0e0e0] bg-[#fdf2f4] px-3 py-3.5 shadow-none">
-      <div className="flex min-h-12 items-center gap-5">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          {icon}
+          <span className="shrink-0">{icon}</span>
           <h2 className="min-w-0 flex-1 text-xl font-semibold leading-7 tracking-[0.1px] text-black">
             {title}
           </h2>
         </div>
         <button
           type="button"
-          className="flex h-12 shrink-0 items-center justify-center rounded-lg border border-[#f2f2f2] bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+          className="flex h-12 w-full shrink-0 items-center justify-center rounded-lg border border-[#f2f2f2] bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 sm:w-auto"
         >
           {actionLabel}
         </button>
@@ -3105,6 +3153,14 @@ function EyeSlashIcon({ className }: { className?: string }) {
       <path d="M15.51 12.7C15.25 14.11 14.1 15.26 12.69 15.52" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M9.47 14.53L2 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M22 2L14.53 9.47" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
