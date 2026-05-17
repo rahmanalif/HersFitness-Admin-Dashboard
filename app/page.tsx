@@ -7,6 +7,8 @@ import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navSections = [
   { label: "Overview", section: "overview", icon: OverviewIcon },
@@ -101,189 +103,33 @@ const activities = [
 ];
 
 const members = [
-  {
-    name: "Wade Warren",
-    email: "iam123@gmail.com",
-    id: "USR-8494",
-    status: "Active",
-    joined: "26",
-  },
-  {
-    name: "Eleanor Pena...",
-    email: "uam@giaml.com",
-    id: "USR-8494",
-    status: "Inactive",
-    joined: "26",
-  },
-  {
-    name: "Wade Warren",
-    email: "iam123@gmail.com",
-    id: "USR-8494",
-    status: "Active",
-    joined: "26",
-  },
-  {
-    name: "Wade Warren",
-    email: "iam123@gmail.com",
-    id: "USR-8494",
-    status: "Active",
-    joined: "26",
-  },
-  {
-    name: "Marvin McKinney",
-    email: "marvin.mckinney@example.com",
-    id: "USR-8494",
-    status: "Suspended",
-    joined: "34",
-  },
-  {
-    name: "Eleanor Pena...",
-    email: "uam@giaml.com",
-    id: "USR-8494",
-    status: "Inactive",
-    joined: "26",
-  },
-  {
-    name: "Wade Warren",
-    email: "iam123@gmail.com",
-    id: "USR-8494",
-    status: "Active",
-    joined: "26",
-  },
-  {
-    name: "Eleanor Pena...",
-    email: "uam@giaml.com",
-    id: "USR-8494",
-    status: "Inactive",
-    joined: "26",
-  },
-  {
-    name: "Wade Warren",
-    email: "iam123@gmail.com",
-    id: "USR-8494",
-    status: "Active",
-    joined: "26",
-  },
-  {
-    name: "Marvin McKinney",
-    email: "marvin.mckinney@example.com",
-    id: "USR-8494",
-    status: "Suspended",
-    joined: "34",
-  },
-  {
-    name: "Eleanor Pena...",
-    email: "uam@giaml.com",
-    id: "USR-8494",
-    status: "Inactive",
-    joined: "26",
-  },
-  {
-    name: "Eleanor Pena...",
-    email: "uam@giaml.com",
-    id: "USR-8494",
-    status: "Inactive",
-    joined: "26",
-  },
+  { id: "USR-8494", name: "Wade Warren", email: "wade.warren@example.com", status: "Active", joined: "26" },
+  { id: "USR-8495", name: "Eleanor Pena", email: "eleanor.pena@example.com", status: "Inactive", joined: "26" },
+  { id: "USR-8496", name: "Guy Hawkins", email: "guy.hawkins@example.com", status: "Active", joined: "26" },
+  { id: "USR-8497", name: "Sabrina Hill", email: "sabrina.hill@example.com", status: "Active", joined: "26" },
+  { id: "USR-8498", name: "Courtney Henry", email: "courtney.henry@example.com", status: "Suspended", joined: "34" },
+  { id: "USR-8499", name: "Albert Flores", email: "albert.flores@example.com", status: "Inactive", joined: "26" },
+  { id: "USR-8500", name: "Annette Black", email: "annette.black@example.com", status: "Active", joined: "26" },
+  { id: "USR-8501", name: "Theresa Webb", email: "theresa.webb@example.com", status: "Inactive", joined: "26" },
+  { id: "USR-8502", name: "Ronald Richards", email: "ronald.richards@example.com", status: "Active", joined: "26" },
+  { id: "USR-8503", name: "Bessie Cooper", email: "bessie.cooper@example.com", status: "Suspended", joined: "34" },
+  { id: "USR-8504", name: "Floyd Miles", email: "floyd.miles@example.com", status: "Inactive", joined: "26" },
+  { id: "USR-8505", name: "Jerome Bell", email: "jerome.bell@example.com", status: "Inactive", joined: "26" },
 ];
 
 const trainers = [
-  {
-    name: "Wade Warren",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Active",
-    rating: "26",
-  },
-  {
-    name: "Eleanor Pena...",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Inactive",
-    rating: "26",
-  },
-  {
-    name: "Wade Warren",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Active",
-    rating: "26",
-  },
-  {
-    name: "Wade Warren",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Active",
-    rating: "26",
-  },
-  {
-    name: "Marvin McKinney",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Suspended",
-    rating: "34",
-  },
-  {
-    name: "Eleanor Pena...",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Inactive",
-    rating: "26",
-  },
-  {
-    name: "Wade Warren",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Active",
-    rating: "26",
-  },
-  {
-    name: "Eleanor Pena...",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Inactive",
-    rating: "26",
-  },
-  {
-    name: "Wade Warren",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Active",
-    rating: "26",
-  },
-  {
-    name: "Marvin McKinney",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Suspended",
-    rating: "34",
-  },
-  {
-    name: "Eleanor Pena...",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Inactive",
-    rating: "26",
-  },
-  {
-    name: "Eleanor Pena...",
-    user: "USER 123",
-    specialty: "USR-8494",
-    classes: "08",
-    status: "Inactive",
-    rating: "26",
-  },
+  { id: "TRN-1021", name: "Brooklyn Simmons", user: "USER 121", specialty: "Yoga", classes: "08", status: "Active", rating: "26" },
+  { id: "TRN-1022", name: "Jerome Bell", user: "USER 122", specialty: "Fitness", classes: "08", status: "Inactive", rating: "26" },
+  { id: "TRN-1023", name: "Arlene McCoy", user: "USER 123", specialty: "Boxing", classes: "08", status: "Active", rating: "26" },
+  { id: "TRN-1024", name: "Darlene Robertson", user: "USER 124", specialty: "Pilates", classes: "08", status: "Active", rating: "26" },
+  { id: "TRN-1025", name: "Jane Cooper", user: "USER 125", specialty: "Zumba", classes: "08", status: "Suspended", rating: "34" },
+  { id: "TRN-1026", name: "Cameron Williamson", user: "USER 126", specialty: "Strength", classes: "08", status: "Inactive", rating: "26" },
+  { id: "TRN-1027", name: "Kristin Watson", user: "USER 127", specialty: "Cardio", classes: "08", status: "Active", rating: "26" },
+  { id: "TRN-1028", name: "Robert Fox", user: "USER 128", specialty: "Crossfit", classes: "08", status: "Inactive", rating: "26" },
+  { id: "TRN-1029", name: "Jacob Jones", user: "USER 129", specialty: "Cycling", classes: "08", status: "Active", rating: "26" },
+  { id: "TRN-1030", name: "Cody Fisher", user: "USER 130", specialty: "Dance", classes: "08", status: "Suspended", rating: "34" },
+  { id: "TRN-1031", name: "Savannah Nguyen", user: "USER 131", specialty: "HIIT", classes: "08", status: "Inactive", rating: "26" },
+  { id: "TRN-1032", name: "Eleanor Pena", user: "USER 132", specialty: "Yoga", classes: "08", status: "Inactive", rating: "26" },
 ];
 
 const transactions = [
@@ -520,7 +366,13 @@ export default function Home() {
             {activeSection === "trainers" ? (
               <TrainerSection onOpenTrainerDetails={setSelectedTrainer} />
             ) : null}
-            {activeSection === "verification" ? <VerificationSection /> : null}
+            {activeSection === "verification" ? (
+              <VerificationSection
+                onNavigate={setActiveSection}
+                onOpenMemberDetails={setSelectedMember}
+                onOpenTrainerDetails={setSelectedTrainer}
+              />
+            ) : null}
             {activeSection === "transactions" ? <TransactionsSection /> : null}
             {activeSection === "support" ? <SupportSection /> : null}
             {activeSection === "settings" ? <SettingsSection /> : null}
@@ -536,18 +388,22 @@ export default function Home() {
           </section>
         </div>
       </div>
-      {selectedMember ? (
-        <MemberDetailsModal
-          member={selectedMember}
-          onClose={() => setSelectedMember(null)}
-        />
-      ) : null}
-      {selectedTrainer ? (
-        <TrainerDetailsModal
-          trainer={selectedTrainer}
-          onClose={() => setSelectedTrainer(null)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {selectedMember && (
+          <MemberDetailsModal
+            member={selectedMember}
+            onClose={() => setSelectedMember(null)}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedTrainer && (
+          <TrainerDetailsModal
+            trainer={selectedTrainer}
+            onClose={() => setSelectedTrainer(null)}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
@@ -1106,13 +962,38 @@ function MemberDetailsModal({
   member: (typeof members)[number];
   onClose: () => void;
 }) {
+  const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
+
+  const assessment = [
+    { q: "What is your primary fitness goal?", a: "Weight loss and building core strength." },
+    { q: "How many days a week can you commit to training?", a: "3-4 days per week." },
+    { q: "Do you have any dietary restrictions?", a: "Vegetarian, no dairy." },
+    { q: "What is your current activity level?", a: "Sedentary (office job)." },
+    { q: "Have you worked with a trainer before?", a: "Yes, about 2 years ago." },
+    { q: "Physical Limitations", a: ["Athritis", "Back Pain", "Asthma", "Obesity"], type: "tags" },
+    { q: "Supplements", a: ["Protein", "Magnesium", "Vitamin D"], type: "tags", tagTone: "text-[#e06f83]", bg: "bg-[#fff1f2]" },
+    { q: "Health & Lifestyle Metrics", a: [
+      { label: "Current Age", value: "18 yr" },
+      { label: "Current Weight", value: "18 kg" },
+      { label: "Sleep", value: "7-8 hr" },
+      { label: "Current Diet", value: "Carbo Diet" },
+    ], type: "metrics" },
+  ];
+
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex justify-end bg-black/45 p-3"
       role="presentation"
       onMouseDown={onClose}
     >
-      <section
+      <motion.section
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="member-details-title"
@@ -1171,50 +1052,77 @@ function MemberDetailsModal({
               </div>
             </div>
 
-            <TagPanel
-              icon={<StretchIcon className="size-6 text-[#f7869a]" />}
-              caption="physical limitations"
-              tags={["Athritis", "Back Pain", "Asthma", "Obesity"]}
-            />
-            <TagPanel
-              icon={<PrescriptionIcon className="size-6 text-[#e06f83]" />}
-              caption="Supplements"
-              tagTone="text-[#e06f83]"
-              tags={["Protein", "Magnesium", "Vitamin D"]}
-            />
-
-            <div className="grid grid-cols-2 gap-1.5">
-              <InfoTile
-                icon={<SmileIcon className="size-6 text-[#f7869a]" />}
-                value="7-8"
-                unit="hr"
-                label="Sleep"
-              />
-              <InfoTile
-                icon={<DietIcon className="size-6 text-[#0284c7]" />}
-                value="Carbo Diet"
-                label="specific diet"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5">
-              <InfoTile
-                icon={<CalendarSolidIcon className="size-6 text-[#fb7185]" />}
-                value="18"
-                unit="yr"
-                label="Current Age"
-              />
-              <InfoTile
-                icon={<WeightIcon className="size-6 text-[#16a34a]" />}
-                value="18"
-                unit="kg"
-                label="Current weight"
-              />
-              <InfoTile
-                icon={<DietIcon className="size-6 text-[#0284c7]" />}
-                value="Carbo Diet"
-                label="specific diet"
-              />
+            {/* Assessment Section */}
+            <div className="rounded-3xl border border-[#f2f2f2] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)] overflow-hidden">
+              <button
+                onClick={() => setIsAssessmentOpen(!isAssessmentOpen)}
+                className="flex w-full items-center justify-between p-4 transition-colors hover:bg-[#fcfcfc]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-[#fdf2f4]">
+                    <DocumentNormalIcon className="size-5 text-[#f7869a]" />
+                  </div>
+                  <h3 className="text-base font-semibold leading-6 tracking-[0.08px] text-[#121212]">
+                    Member Assessment
+                  </h3>
+                </div>
+                <ChevronDownIcon className={cn(
+                  "size-5 text-[#7a7a7a] transition-transform duration-200",
+                  isAssessmentOpen && "rotate-180"
+                )} />
+              </button>
+              
+              {isAssessmentOpen && (
+                <div className="border-t border-[#f2f2f2] bg-[#fdfdfd] p-4">
+                  <div className="flex flex-col gap-5">
+                    {assessment.map((item, idx) => (
+                      <div key={idx} className="flex flex-col gap-1.5">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-[#f7869a]">
+                          {item.type === "tags" || item.type === "metrics" ? item.q : `Question ${idx + 1}`}
+                        </p>
+                        {item.type !== "tags" && item.type !== "metrics" && (
+                          <p className="text-sm font-medium leading-5 text-[#121212]">
+                            {item.q}
+                          </p>
+                        )}
+                        {item.type === "tags" ? (
+                          <div className="flex flex-wrap gap-2">
+                            {(item.a as string[]).map((tag) => (
+                              <span
+                                key={tag}
+                                className={cn(
+                                  "flex h-7 items-center justify-center rounded-[9px] px-2.5 py-1.5 text-center text-xs font-medium leading-5 tracking-[0.07px]",
+                                  item.bg || "bg-[#fdf2f4]",
+                                  item.tagTone || "text-[#f7869a]"
+                                )}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : item.type === "metrics" ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            {(item.a as { label: string; value: string }[]).map((metric, mIdx) => (
+                              <div key={mIdx} className="rounded-xl border border-[#f2f2f2] bg-white p-3">
+                                <p className="text-[10px] font-medium uppercase tracking-wider text-[#7a7a7a]">
+                                  {metric.label}
+                                </p>
+                                <p className="text-sm font-semibold text-[#121212]">
+                                  {metric.value}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-[#f2f2f2] bg-white p-3 text-sm font-normal leading-5 text-[#4a4a4a]">
+                            {item.a as string}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <ContactCard
@@ -1248,8 +1156,8 @@ function MemberDetailsModal({
             Suspend User
           </button>
         </footer>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
@@ -1394,12 +1302,19 @@ function TrainerDetailsModal({
   onClose: () => void;
 }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex justify-end bg-black/45 p-0 sm:p-0"
       role="presentation"
       onMouseDown={onClose}
     >
-      <section
+      <motion.section
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="trainer-details-title"
@@ -1433,7 +1348,7 @@ function TrainerDetailsModal({
                     {trainer.name.replace("...", "")}
                   </h3>
                   <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
-                    User ID : {trainer.specialty}
+                    User ID : {trainer.id}
                   </p>
                   <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
                     Joined : Oct 24, 2023
@@ -1519,8 +1434,8 @@ function TrainerDetailsModal({
             Suspend User
           </button>
         </footer>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
@@ -1606,9 +1521,18 @@ function TrainerSection({
   );
 }
 
-function VerificationSection() {
+function VerificationSection({
+  onNavigate,
+  onOpenMemberDetails,
+  onOpenTrainerDetails,
+}: {
+  onNavigate: (section: DashboardSection) => void;
+  onOpenMemberDetails: (member: (typeof members)[number]) => void;
+  onOpenTrainerDetails: (trainer: (typeof trainers)[number]) => void;
+}) {
   const [filter, setFilter] = useState<"members" | "trainers">("members");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [rejectionRequest, setRejectionRequest] = useState<any | null>(null);
 
   const list = filter === "members" ? pendingApprovals.members : pendingApprovals.trainers;
 
@@ -1676,23 +1600,68 @@ function VerificationSection() {
           className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {list.map((request, index) => (
-            <VerificationCard key={`${request.id}-${index}`} request={request} />
+            <VerificationCard
+              key={`${request.id}-${index}`}
+              request={request}
+              onNavigate={onNavigate}
+              onOpenMemberDetails={onOpenMemberDetails}
+              onOpenTrainerDetails={onOpenTrainerDetails}
+              onReject={setRejectionRequest}
+            />
           ))}
         </section>
       </div>
+
+      {rejectionRequest && (
+        <RejectionModal
+          request={rejectionRequest}
+          onClose={() => setRejectionRequest(null)}
+          onConfirm={(reason) => {
+            toast.error(`Rejected: ${rejectionRequest.name}. Reason: ${reason}`);
+            setRejectionRequest(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
 function VerificationCard({
   request,
+  onNavigate,
+  onOpenMemberDetails,
+  onOpenTrainerDetails,
+  onReject,
 }: {
   request: any;
+  onNavigate: (section: DashboardSection) => void;
+  onOpenMemberDetails: (member: (typeof members)[number]) => void;
+  onOpenTrainerDetails: (trainer: (typeof trainers)[number]) => void;
+  onReject: (request: any) => void;
 }) {
+  const handleProfileClick = () => {
+    if (request.type === "Member") {
+      const member = members.find((m) => m.id === request.id);
+      if (member) {
+        onNavigate("members");
+        onOpenMemberDetails(member);
+      }
+    } else {
+      const trainer = trainers.find((t) => t.id === request.id);
+      if (trainer) {
+        onNavigate("trainers");
+        onOpenTrainerDetails(trainer);
+      }
+    }
+  };
+
   return (
     <Card className="w-full rounded-2xl border-[#f2f2f2] bg-white p-5 shadow-[0_4px_10px_rgba(0,0,0,0.03)] transition-shadow hover:shadow-md">
       <div className="flex items-start">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+        <button
+          onClick={handleProfileClick}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left transition-opacity hover:opacity-80"
+        >
           <Image
             src={request.type === "Member" ? "/figma-assets/member-avatar.png" : "/figma-assets/trainer-avatar.png"}
             alt=""
@@ -1708,7 +1677,7 @@ function VerificationCard({
               {request.id}
             </p>
           </div>
-        </div>
+        </button>
         <span className="flex h-6 shrink-0 items-center justify-center rounded bg-[#fef3c7] px-2 py-0.5 font-['Public_Sans',Arial,sans-serif] text-sm font-semibold leading-[22px] tracking-[0.22px] text-[#d97706]">
           Pending
         </span>
@@ -1744,6 +1713,10 @@ function VerificationCard({
       <div className="mt-[7px] grid grid-cols-2 gap-2">
         <button
           type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toast.success(`Approved! Notification sent to ${request.name}.`);
+          }}
           className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#dcfce7] px-6 py-3 text-sm font-semibold leading-6 tracking-[0.08px] text-[#16a34a] transition-colors hover:bg-[#c9f7d9] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20"
         >
           <CheckIcon className="size-5" />
@@ -1751,6 +1724,10 @@ function VerificationCard({
         </button>
         <button
           type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReject(request);
+          }}
           className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#fee2e2] px-6 py-3 text-sm font-semibold leading-6 tracking-[0.08px] text-[#dc2626] transition-colors hover:bg-[#fbd4d4] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#dc2626]/20"
           aria-label={`Reject ${request.name}`}
         >
@@ -1759,6 +1736,102 @@ function VerificationCard({
         </button>
       </div>
     </Card>
+  );
+}
+
+function RejectionModal({
+  request,
+  onClose,
+  onConfirm,
+}: {
+  request: any;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <motion.section
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rejection-modal-title"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="flex h-[64px] items-center justify-between border-b border-[#f3f4f6] px-6">
+          <h2
+            id="rejection-modal-title"
+            className="text-lg font-semibold leading-7 text-[#101828]"
+          >
+            Reject Verification
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-full text-[#4a4a4a] transition-colors hover:bg-[#f7f7f7]"
+          >
+            <CloseIcon className="size-5" />
+          </button>
+        </header>
+
+        <div className="p-6">
+          <div className="mb-4">
+            <p className="text-sm font-medium text-[#4a4a4a]">
+              Rejecting request for:
+            </p>
+            <p className="text-base font-semibold text-[#121212]">
+              {request.name} ({request.id})
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="rejection-reason"
+              className="text-sm font-medium text-[#121212]"
+            >
+              Reason for rejection
+            </label>
+            <textarea
+              id="rejection-reason"
+              rows={4}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Please provide a reason for rejecting this request..."
+              className="w-full rounded-xl border border-[#e0e0e0] p-3 text-sm focus:border-[#f7869a] focus:outline-none focus:ring-4 focus:ring-[#f7869a]/10"
+            />
+          </div>
+        </div>
+
+        <footer className="flex items-center justify-end gap-3 bg-[#f9fafb] px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-[#e0e0e0] bg-white px-4 py-2 text-sm font-semibold text-[#4a4a4a] hover:bg-[#f7f7f7]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(reason)}
+            disabled={!reason.trim()}
+            className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:bg-[#b91c1c] disabled:opacity-50"
+          >
+            Confirm Rejection
+          </button>
+        </footer>
+      </motion.section>
+    </motion.div>
   );
 }
 
