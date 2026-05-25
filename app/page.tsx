@@ -1,12 +1,29 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  ApiError,
+  loginAdmin,
+  logoutAdmin,
+  refreshAccessToken,
+} from "@/lib/auth-api";
+import {
+  type AdminVerification,
+  useApproveAdminVerificationMutation,
+  useGetAdminVerificationsQuery,
+} from "@/lib/admin-verifications-api";
+import { getStoredRefreshToken, useAuthStore } from "@/lib/auth-store";
+import type { AdminMember, AdminMemberActivity } from "@/lib/members-api";
+import type { AdminTrainer } from "@/lib/trainers-api";
 import { cn } from "@/lib/utils";
+import { useAdminMember, useAdminMembers } from "@/hooks/use-admin-members";
+import { useAdminTrainer, useAdminTrainers } from "@/hooks/use-admin-trainers";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -63,73 +80,12 @@ const metricCards = [
   },
 ];
 
-const pendingApprovals = {
-  members: [
-    { id: "USR-8494", name: "Wade Warren", type: "Member", submitted: "24/02/2024" },
-    { id: "USR-8495", name: "Eleanor Pena", type: "Member", submitted: "25/02/2024" },
-    { id: "USR-8496", name: "Guy Hawkins", type: "Member", submitted: "26/02/2024" },
-    { id: "USR-8497", name: "Sabrina Hill", type: "Member", submitted: "27/02/2024" },
-    { id: "USR-8498", name: "Courtney Henry", type: "Member", submitted: "28/02/2024" },
-    { id: "USR-8499", name: "Albert Flores", type: "Member", submitted: "29/02/2024" },
-    { id: "USR-8500", name: "Annette Black", type: "Member", submitted: "01/03/2024" },
-    { id: "USR-8501", name: "Theresa Webb", type: "Member", submitted: "02/03/2024" },
-    { id: "USR-8502", name: "Ronald Richards", type: "Member", submitted: "03/03/2024" },
-    { id: "USR-8503", name: "Bessie Cooper", type: "Member", submitted: "04/03/2024" },
-    { id: "USR-8504", name: "Floyd Miles", type: "Member", submitted: "05/03/2024" },
-    { id: "USR-8505", name: "Jerome Bell", type: "Member", submitted: "06/03/2024" },
-  ],
-  trainers: [
-    { id: "TRN-1021", name: "Brooklyn Simmons", type: "Trainer", submitted: "24/02/2024" },
-    { id: "TRN-1022", name: "Jerome Bell", type: "Trainer", submitted: "25/02/2024" },
-    { id: "TRN-1023", name: "Arlene McCoy", type: "Trainer", submitted: "26/02/2024" },
-    { id: "TRN-1024", name: "Darlene Robertson", type: "Trainer", submitted: "27/02/2024" },
-    { id: "TRN-1025", name: "Jane Cooper", type: "Trainer", submitted: "28/02/2024" },
-    { id: "TRN-1026", name: "Cameron Williamson", type: "Trainer", submitted: "29/02/2024" },
-    { id: "TRN-1027", name: "Kristin Watson", type: "Trainer", submitted: "01/03/2024" },
-    { id: "TRN-1028", name: "Robert Fox", type: "Trainer", submitted: "02/03/2024" },
-    { id: "TRN-1029", name: "Jacob Jones", type: "Trainer", submitted: "03/03/2024" },
-    { id: "TRN-1030", name: "Cody Fisher", type: "Trainer", submitted: "04/03/2024" },
-    { id: "TRN-1031", name: "Savannah Nguyen", type: "Trainer", submitted: "05/03/2024" },
-    { id: "TRN-1032", name: "Eleanor Pena", type: "Trainer", submitted: "06/03/2024" },
-  ],
-};
-
 const activities = [
   ["New Member", "Rakib Roy", "10 min ago"],
   ["submitted a new testimonial video", "By Maya Patel", "1 day ago"],
   ["Pending Approval", "Liam Chen", "1 day ago"],
   ["Banned", "Sophia Alvarez", "3 days ago"],
   ["Account Upgraded", "Ethan Murphy", "5 days ago"],
-];
-
-const members = [
-  { id: "USR-8494", name: "Wade Warren", email: "wade.warren@example.com", status: "Active", joined: "26" },
-  { id: "USR-8495", name: "Eleanor Pena", email: "eleanor.pena@example.com", status: "Inactive", joined: "26" },
-  { id: "USR-8496", name: "Guy Hawkins", email: "guy.hawkins@example.com", status: "Active", joined: "26" },
-  { id: "USR-8497", name: "Sabrina Hill", email: "sabrina.hill@example.com", status: "Active", joined: "26" },
-  { id: "USR-8498", name: "Courtney Henry", email: "courtney.henry@example.com", status: "Suspended", joined: "34" },
-  { id: "USR-8499", name: "Albert Flores", email: "albert.flores@example.com", status: "Inactive", joined: "26" },
-  { id: "USR-8500", name: "Annette Black", email: "annette.black@example.com", status: "Active", joined: "26" },
-  { id: "USR-8501", name: "Theresa Webb", email: "theresa.webb@example.com", status: "Inactive", joined: "26" },
-  { id: "USR-8502", name: "Ronald Richards", email: "ronald.richards@example.com", status: "Active", joined: "26" },
-  { id: "USR-8503", name: "Bessie Cooper", email: "bessie.cooper@example.com", status: "Suspended", joined: "34" },
-  { id: "USR-8504", name: "Floyd Miles", email: "floyd.miles@example.com", status: "Inactive", joined: "26" },
-  { id: "USR-8505", name: "Jerome Bell", email: "jerome.bell@example.com", status: "Inactive", joined: "26" },
-];
-
-const trainers = [
-  { id: "TRN-1021", name: "Brooklyn Simmons", user: "USER 121", specialty: "Yoga", classes: "08", status: "Active", rating: "26" },
-  { id: "TRN-1022", name: "Jerome Bell", user: "USER 122", specialty: "Fitness", classes: "08", status: "Inactive", rating: "26" },
-  { id: "TRN-1023", name: "Arlene McCoy", user: "USER 123", specialty: "Boxing", classes: "08", status: "Active", rating: "26" },
-  { id: "TRN-1024", name: "Darlene Robertson", user: "USER 124", specialty: "Pilates", classes: "08", status: "Active", rating: "26" },
-  { id: "TRN-1025", name: "Jane Cooper", user: "USER 125", specialty: "Zumba", classes: "08", status: "Suspended", rating: "34" },
-  { id: "TRN-1026", name: "Cameron Williamson", user: "USER 126", specialty: "Strength", classes: "08", status: "Inactive", rating: "26" },
-  { id: "TRN-1027", name: "Kristin Watson", user: "USER 127", specialty: "Cardio", classes: "08", status: "Active", rating: "26" },
-  { id: "TRN-1028", name: "Robert Fox", user: "USER 128", specialty: "Crossfit", classes: "08", status: "Inactive", rating: "26" },
-  { id: "TRN-1029", name: "Jacob Jones", user: "USER 129", specialty: "Cycling", classes: "08", status: "Active", rating: "26" },
-  { id: "TRN-1030", name: "Cody Fisher", user: "USER 130", specialty: "Dance", classes: "08", status: "Suspended", rating: "34" },
-  { id: "TRN-1031", name: "Savannah Nguyen", user: "USER 131", specialty: "HIIT", classes: "08", status: "Inactive", rating: "26" },
-  { id: "TRN-1032", name: "Eleanor Pena", user: "USER 132", specialty: "Yoga", classes: "08", status: "Inactive", rating: "26" },
 ];
 
 const transactions = [
@@ -316,17 +272,59 @@ type DashboardSection =
   | "settings";
 
 export default function Home() {
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const isReady = useAuthStore((state) => state.isReady);
+  const markReady = useAuthStore((state) => state.markReady);
+  const clearSession = useAuthStore((state) => state.clearSession);
   const [activeSection, setActiveSection] =
-    useState<DashboardSection>("verification");
+    useState<DashboardSection>("overview");
   const [selectedMember, setSelectedMember] =
-    useState<(typeof members)[number] | null>(null);
+    useState<AdminMember | null>(null);
   const [selectedTrainer, setSelectedTrainer] =
-    useState<(typeof trainers)[number] | null>(null);
+    useState<AdminTrainer | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const refreshSessionMutation = useMutation({
+    mutationFn: refreshAccessToken,
+    onError: () => {
+      clearSession();
+    },
+  });
+  const {
+    mutate: refreshSession,
+    isPending: isRefreshingSession,
+  } = refreshSessionMutation;
+  const logoutMutation = useMutation({
+    mutationFn: logoutAdmin,
+    onSettled: () => {
+      clearSession();
+      setSelectedMember(null);
+      setSelectedTrainer(null);
+      setIsMobileMenuOpen(false);
+      toast.success("Logged out successfully.");
+    },
+  });
 
-  if (!isSignedIn) {
-    return <SignInScreen onSignIn={() => setIsSignedIn(true)} />;
+  useEffect(() => {
+    if (accessToken || isReady || isRefreshingSession) return;
+
+    if (getStoredRefreshToken()) {
+      refreshSession();
+      return;
+    }
+
+    markReady();
+  }, [accessToken, isReady, isRefreshingSession, markReady, refreshSession]);
+
+  if (!isReady) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-white text-sm font-medium text-[#7a7a7a]">
+        Restoring session...
+      </main>
+    );
+  }
+
+  if (!accessToken) {
+    return <SignInScreen />;
   }
 
   return (
@@ -344,7 +342,7 @@ export default function Home() {
             setActiveSection(section);
             setIsMobileMenuOpen(false);
           }}
-          onLogout={() => setIsSignedIn(false)}
+          onLogout={() => logoutMutation.mutate()}
           isMobileMenuOpen={isMobileMenuOpen}
         />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -408,11 +406,27 @@ export default function Home() {
   );
 }
 
-function SignInScreen({
-  onSignIn,
-}: {
-  onSignIn: () => void;
-}) {
+function SignInScreen() {
+  const setSession = useAuthStore((state) => state.setSession);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+  const loginMutation = useMutation({
+    mutationFn: loginAdmin,
+    onSuccess: (session) => {
+      setSession(session);
+      toast.success("Login successful.");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Unable to log in. Please try again.";
+
+      toast.error(message);
+    },
+  });
+
   return (
     <main className="login-figma-bg relative grid min-h-screen overflow-hidden px-5 py-8 text-[#121212]">
       <form
@@ -420,7 +434,7 @@ function SignInScreen({
         className="styled-form relative z-10 m-auto flex w-full max-w-[408px] flex-col items-center gap-4 p-10"
         onSubmit={(event) => {
           event.preventDefault();
-          onSignIn();
+          loginMutation.mutate({ username, password, rememberMe });
         }}
       >
         <Image
@@ -446,7 +460,12 @@ function SignInScreen({
               <MailIcon className="size-6 shrink-0 text-[#7a7a7a]" />
               <input
                 type="email"
+                name="username"
                 placeholder="Username"
+                required
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
                 className="min-w-0 flex-1 border-0 bg-transparent text-sm font-normal text-[#121212] outline-none placeholder:text-[#7a7a7a]"
               />
             </span>
@@ -459,7 +478,12 @@ function SignInScreen({
                 <LockThinIcon className="size-6 shrink-0 text-[#7a7a7a]" />
                 <input
                   type="password"
+                  name="password"
                   placeholder="Password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="min-w-0 flex-1 border-0 bg-transparent text-sm font-normal text-[#121212] outline-none placeholder:text-[#7a7a7a]"
                 />
               </span>
@@ -469,7 +493,11 @@ function SignInScreen({
               <div className="flex items-center gap-2">
                 <div className="checkbox-styled-wrapper">
                   <label className="checkbox-container" aria-label="Remember me">
-                    <input type="checkbox" defaultChecked />
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(event) => setRememberMe(event.target.checked)}
+                    />
                     <div className="checkmark" />
                   </label>
                 </div>
@@ -489,9 +517,10 @@ function SignInScreen({
 
         <button
           type="submit"
+          disabled={loginMutation.isPending}
           className="styled-btn mt-8 flex h-12 items-center justify-center self-center px-6 text-base font-medium text-black"
         >
-          Submit
+          {loginMutation.isPending ? "Signing in..." : "Submit"}
         </button>
       </form>
     </main>
@@ -605,10 +634,13 @@ function SidebarClockCard({ onLogout }: { onLogout: () => void }) {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
+    const initialTimer = window.setTimeout(() => setNow(new Date()), 0);
     const timer = window.setInterval(() => setNow(new Date()), 1000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+    };
   }, []);
 
   const timeParts = now
@@ -880,8 +912,16 @@ function RecentActivity() {
 function MemberSection({
   onOpenMemberDetails,
 }: {
-  onOpenMemberDetails: (member: (typeof members)[number]) => void;
+  onOpenMemberDetails: (member: AdminMember) => void;
 }) {
+  const {
+    data: apiMembers = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useAdminMembers();
+
   return (
     <section
       id="members"
@@ -904,12 +944,55 @@ function MemberSection({
               </tr>
             </thead>
             <tbody>
-              {members.map((member, index) => (
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="border-b border-dashed border-[#c4cdd5] px-3 py-10 text-center text-sm font-medium text-[#7a7a7a]"
+                  >
+                    Loading members...
+                  </td>
+                </tr>
+              ) : null}
+              {isError ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="border-b border-dashed border-[#c4cdd5] px-3 py-10 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <p className="text-sm font-medium text-[#dc2626]">
+                        {error instanceof Error
+                          ? error.message
+                          : "Unable to load members."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => refetch()}
+                        className="rounded-lg bg-[#fdf2f4] px-4 py-2 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f9e8ec]"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoading && !isError && apiMembers.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="border-b border-dashed border-[#c4cdd5] px-3 py-10 text-center text-sm font-medium text-[#7a7a7a]"
+                  >
+                    No members found.
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoading && !isError ? apiMembers.map((member, index) => (
                 <tr key={`${member.name}-${index}`} className="h-[52px]">
                   <td className="border-b border-dashed border-[#c4cdd5] px-3 py-2">
                     <div className="flex min-w-0 items-center gap-3">
                       <Image
-                        src="/figma-assets/member-avatar.png"
+                        src={member.profileImageUrl || "/figma-assets/member-avatar.png"}
                         alt=""
                         width={32}
                         height={32}
@@ -945,7 +1028,7 @@ function MemberSection({
                     </button>
                   </td>
                 </tr>
-              ))}
+              )) : null}
             </tbody>
           </table>
         </div>
@@ -955,30 +1038,68 @@ function MemberSection({
   );
 }
 
+function formatAssessmentValue(val?: string | null) {
+  if (!val) return "-";
+  return val
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
 function MemberDetailsModal({
   member,
   onClose,
 }: {
-  member: (typeof members)[number];
+  member: AdminMember;
   onClose: () => void;
 }) {
   const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
+  const {
+    data: memberDetails,
+    isLoading: isLoadingMemberDetails,
+    isError: isMemberDetailsError,
+    error: memberDetailsError,
+    refetch: refetchMemberDetails,
+  } = useAdminMember(member.id);
+  const displayMember = memberDetails ?? member;
 
-  const assessment = [
-    { q: "What is your primary fitness goal?", a: "Weight loss and building core strength." },
-    { q: "How many days a week can you commit to training?", a: "3-4 days per week." },
-    { q: "Do you have any dietary restrictions?", a: "Vegetarian, no dairy." },
-    { q: "What is your current activity level?", a: "Sedentary (office job)." },
-    { q: "Have you worked with a trainer before?", a: "Yes, about 2 years ago." },
-    { q: "Physical Limitations", a: ["Athritis", "Back Pain", "Asthma", "Obesity"], type: "tags" },
-    { q: "Supplements", a: ["Protein", "Magnesium", "Vitamin D"], type: "tags", tagTone: "text-[#e06f83]", bg: "bg-[#fff1f2]" },
-    { q: "Health & Lifestyle Metrics", a: [
-      { label: "Current Age", value: "18 yr" },
-      { label: "Current Weight", value: "18 kg" },
-      { label: "Sleep", value: "7-8 hr" },
-      { label: "Current Diet", value: "Carbo Diet" },
-    ], type: "metrics" },
-  ];
+  const assessmentData = displayMember.memberFitnessAssessment;
+
+  const assessment = displayMember.hasCompletedMemberFitnessAssessment && assessmentData ? [
+    { 
+      q: "What is your primary fitness goal?", 
+      a: formatAssessmentValue(assessmentData.fitnessGoal) 
+    },
+    { 
+      q: "Have you worked with a trainer before?", 
+      a: assessmentData.hasPreviousFitnessExperience ? "Yes" : "No" 
+    },
+    { 
+      q: "Physical Limitations", 
+      a: assessmentData.physicalLimitations || "None",
+      type: assessmentData.physicalLimitations ? "text" : "tags" 
+    },
+    { 
+      q: "Supplements", 
+      a: assessmentData.supplements && assessmentData.supplements.length > 0 
+        ? assessmentData.supplements.map((s: string) => formatAssessmentValue(s)) 
+        : ["None"], 
+      type: "tags", 
+      tagTone: "text-[#e06f83]", 
+      bg: "bg-[#fff1f2]" 
+    },
+    { 
+      q: "Health & Lifestyle Metrics", 
+      a: [
+        { label: "Current Age", value: `${assessmentData.age || "-"} yr` },
+        { label: "Current Weight", value: `${assessmentData.weight || "-"} ${assessmentData.weightUnit || ""}` },
+        { label: "Sleep Quality", value: formatAssessmentValue(assessmentData.sleepQuality) },
+        { label: "Current Diet", value: formatAssessmentValue(assessmentData.dietPreference) },
+        { label: "Calorie Goal", value: `${assessmentData.calorieGoal || "-"} ${assessmentData.calorieUnit || ""}` },
+      ], 
+      type: "metrics" 
+    },
+  ] : [];
 
   return (
     <motion.div
@@ -1021,23 +1142,62 @@ function MemberDetailsModal({
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-4">
               <div className="flex min-w-0 flex-1 items-center gap-4">
-                <div className="size-24 shrink-0 rounded-full border-4 border-white bg-[#d1d6db] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]" />
+                {displayMember.profileImageUrl ? (
+                  <Image
+                    src={displayMember.profileImageUrl}
+                    alt=""
+                    width={96}
+                    height={96}
+                    className="size-24 shrink-0 rounded-full border-4 border-white bg-[#d1d6db] object-cover shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]"
+                  />
+                ) : (
+                  <div className="size-24 shrink-0 rounded-full border-4 border-white bg-[#d1d6db] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]" />
+                )}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-2xl font-medium leading-8 tracking-[0.12px] text-[#121212]">
-                    {member.name.replace("...", "")}
+                    {displayMember.name.replace("...", "")}
                   </h3>
                   <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
-                    User ID : {member.id}
+                    User ID : {displayMember.id}
                   </p>
                   <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
-                    Joined : Oct 24, 2023
+                    Joined : {displayMember.joined}
                   </p>
                 </div>
               </div>
-              <span className="flex h-6 items-center justify-center rounded bg-[#22c55e]/10 px-2 text-base font-medium leading-6 tracking-[0.08px] text-[#16a34a]">
-                Active
+              <span className={cn(
+                "flex h-6 items-center justify-center rounded px-2 text-base font-medium leading-6 tracking-[0.08px]",
+                displayMember.status === "Active" ? "bg-[#dcfce7] text-[#16a34a]" :
+                displayMember.status === "Pending" ? "bg-[#fef3c7] text-[#d97706]" :
+                displayMember.status === "Suspended" ? "bg-[#fee2e2] text-[#dc2626]" :
+                displayMember.status === "Inactive" ? "bg-[#f1f5f9] text-[#64748b]" :
+                "bg-[#f2f2f2] text-[#7a7a7a]"
+              )}>
+                {displayMember.status}
               </span>
             </div>
+
+            {isLoadingMemberDetails ? (
+              <p className="rounded-lg bg-[#fdf2f4] px-3 py-2 text-xs font-medium text-[#64748b]">
+                Loading full member profile...
+              </p>
+            ) : null}
+            {isMemberDetailsError ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-[#fee2e2] bg-[#fff7f7] px-3 py-2">
+                <p className="text-xs font-medium text-[#dc2626]">
+                  {memberDetailsError instanceof Error
+                    ? memberDetailsError.message
+                    : "Unable to load full member profile."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => refetchMemberDetails()}
+                  className="shrink-0 rounded bg-white px-2 py-1 text-xs font-medium text-[#121212]"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
 
             <div className="border-t border-[#e0e0e0] pt-2">
               <div className="flex items-center gap-2">
@@ -1047,93 +1207,112 @@ function MemberDetailsModal({
                 </p>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <DocumentButton>ID Front</DocumentButton>
-                <DocumentButton>ID Back</DocumentButton>
+                <DocumentButton href={displayMember.idCardFrontImageUrl}>
+                  ID Front
+                </DocumentButton>
+                <DocumentButton href={displayMember.idCardBackImageUrl}>
+                  ID Back
+                </DocumentButton>
               </div>
+              {displayMember.idCardType || displayMember.idCardNumber ? (
+                <p className="mt-2 text-xs font-medium text-[#64748b]">
+                  {[displayMember.idCardType, displayMember.idCardNumber]
+                    .filter(Boolean)
+                    .join(" - ")}
+                </p>
+              ) : null}
             </div>
 
             {/* Assessment Section */}
-            <div className="rounded-3xl border border-[#f2f2f2] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)] overflow-hidden">
-              <button
-                onClick={() => setIsAssessmentOpen(!isAssessmentOpen)}
-                className="flex w-full items-center justify-between p-4 transition-colors hover:bg-[#fcfcfc]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-[#fdf2f4]">
-                    <DocumentNormalIcon className="size-5 text-[#f7869a]" />
+            {displayMember.hasCompletedMemberFitnessAssessment && (
+              <div className="rounded-3xl border border-[#f2f2f2] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.05)] overflow-hidden">
+                <button
+                  onClick={() => setIsAssessmentOpen(!isAssessmentOpen)}
+                  className="flex w-full items-center justify-between p-4 transition-colors hover:bg-[#fcfcfc]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-[#fdf2f4]">
+                      <DocumentNormalIcon className="size-5 text-[#f7869a]" />
+                    </div>
+                    <h3 className="text-base font-semibold leading-6 tracking-[0.08px] text-[#121212]">
+                      Member Assessment
+                    </h3>
                   </div>
-                  <h3 className="text-base font-semibold leading-6 tracking-[0.08px] text-[#121212]">
-                    Member Assessment
-                  </h3>
-                </div>
-                <ChevronDownIcon className={cn(
-                  "size-5 text-[#7a7a7a] transition-transform duration-200",
-                  isAssessmentOpen && "rotate-180"
-                )} />
-              </button>
-              
-              {isAssessmentOpen && (
-                <div className="border-t border-[#f2f2f2] bg-[#fdfdfd] p-4">
-                  <div className="flex flex-col gap-5">
-                    {assessment.map((item, idx) => (
-                      <div key={idx} className="flex flex-col gap-1.5">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-[#f7869a]">
-                          {item.type === "tags" || item.type === "metrics" ? item.q : `Question ${idx + 1}`}
-                        </p>
-                        {item.type !== "tags" && item.type !== "metrics" && (
-                          <p className="text-sm font-medium leading-5 text-[#121212]">
-                            {item.q}
+                  <ChevronDownIcon className={cn(
+                    "size-5 text-[#7a7a7a] transition-transform duration-200",
+                    isAssessmentOpen && "rotate-180"
+                  )} />
+                </button>
+                
+                {isAssessmentOpen && (
+                  <div className="border-t border-[#f2f2f2] bg-[#fdfdfd] p-4">
+                    <div className="flex flex-col gap-5">
+                      {assessment.map((item, idx) => (
+                        <div key={idx} className="flex flex-col gap-1.5">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-[#f7869a]">
+                            {item.type === "tags" || item.type === "metrics" ? item.q : `Question ${idx + 1}`}
                           </p>
-                        )}
-                        {item.type === "tags" ? (
-                          <div className="flex flex-wrap gap-2">
-                            {(item.a as string[]).map((tag) => (
-                              <span
-                                key={tag}
-                                className={cn(
-                                  "flex h-7 items-center justify-center rounded-[9px] px-2.5 py-1.5 text-center text-xs font-medium leading-5 tracking-[0.07px]",
-                                  item.bg || "bg-[#fdf2f4]",
-                                  item.tagTone || "text-[#f7869a]"
-                                )}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        ) : item.type === "metrics" ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            {(item.a as { label: string; value: string }[]).map((metric, mIdx) => (
-                              <div key={mIdx} className="rounded-xl border border-[#f2f2f2] bg-white p-3">
-                                <p className="text-[10px] font-medium uppercase tracking-wider text-[#7a7a7a]">
-                                  {metric.label}
-                                </p>
-                                <p className="text-sm font-semibold text-[#121212]">
-                                  {metric.value}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-[#f2f2f2] bg-white p-3 text-sm font-normal leading-5 text-[#4a4a4a]">
-                            {item.a as string}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          {item.type !== "tags" && item.type !== "metrics" && (
+                            <p className="text-sm font-medium leading-5 text-[#121212]">
+                              {item.q}
+                            </p>
+                          )}
+                          {item.type === "tags" ? (
+                            <div className="flex flex-wrap gap-2">
+                              {(item.a as string[]).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className={cn(
+                                    "flex h-7 items-center justify-center rounded-[9px] px-2.5 py-1.5 text-center text-xs font-medium leading-5 tracking-[0.07px]",
+                                    item.bg || "bg-[#fdf2f4]",
+                                    item.tagTone || "text-[#f7869a]"
+                                  )}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : item.type === "metrics" ? (
+                            <div className="grid grid-cols-2 gap-2">
+                              {(item.a as { label: string; value: string }[]).map((metric, mIdx) => (
+                                <div key={mIdx} className="rounded-xl border border-[#f2f2f2] bg-white p-3">
+                                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#7a7a7a]">
+                                    {metric.label}
+                                  </p>
+                                  <p className="text-sm font-semibold text-[#121212]">
+                                    {metric.value}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-[#f2f2f2] bg-white p-3 text-sm font-normal leading-5 text-[#4a4a4a]">
+                              {item.a as string}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             <ContactCard
               icon={<ContactBookIcon className="size-6 text-[#f7869a]" />}
               title="Contact Info"
-              lines={["(225) 555-0118", "Example@email.com"]}
+              lines={[
+                displayMember.phoneNumber || "No phone number",
+                displayMember.email,
+              ]}
             />
             <ContactCard
               icon={<LocationPinIcon className="size-6 text-[#f7869a]" />}
               title="Location"
-              lines={["578 Boolean Ave, New York, NY, Turing St"]}
+              lines={[
+                [displayMember.location, displayMember.state].filter(Boolean).join(", ") ||
+                  "No location provided",
+              ]}
             />
 
             <section className="flex flex-col gap-3">
@@ -1142,8 +1321,18 @@ function MemberDetailsModal({
                   Recent Activity
                 </h3>
               </div>
-              <ActivityRow />
-              <ActivityRow />
+              {displayMember.recentActivity?.length ? (
+                displayMember.recentActivity.map((activity) => (
+                  <ActivityRow
+                    key={`${activity.type}-${activity.occurredAt}`}
+                    activity={activity}
+                  />
+                ))
+              ) : (
+                <p className="rounded-[14px] border border-[#f2f2f2] bg-[#fafafa] p-4 text-sm font-medium text-[#7a7a7a]">
+                  No recent activity yet.
+                </p>
+              )}
             </section>
           </div>
         </div>
@@ -1161,10 +1350,42 @@ function MemberDetailsModal({
   );
 }
 
-function DocumentButton({ children }: { children: React.ReactNode }) {
+function DocumentButton({
+  children,
+  href,
+}: {
+  children: React.ReactNode;
+  href?: string | null;
+}) {
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="group relative flex h-[136px] items-end justify-center overflow-hidden rounded-lg border border-[#f2dbe1] bg-white p-2 text-[10px] font-medium leading-[15px] text-white transition-colors hover:bg-[#fff7f9] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+      >
+        <Image
+          src={href}
+          alt=""
+          fill
+          sizes="220px"
+          className="object-contain p-2 transition-transform duration-200 group-hover:scale-[1.03]"
+        />
+        <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-1">
+          {children}
+        </span>
+        <span className="relative z-10 rounded bg-black/60 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+          Open full image
+        </span>
+      </a>
+    );
+  }
+
   return (
     <button
       type="button"
+      disabled
       className="flex h-[43px] items-center justify-center rounded-lg bg-[#fdf2f4] p-3.5 text-[10px] font-medium leading-[15px] text-[#64748b] transition-colors hover:bg-[#f9e8ec] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
     >
       {children}
@@ -1275,7 +1496,21 @@ function ContactCard({
   );
 }
 
-function ActivityRow() {
+function formatActivityTimestamp(occurredAt: string) {
+  const date = new Date(occurredAt);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function ActivityRow({ activity }: { activity?: AdminMemberActivity }) {
   return (
     <article className="flex items-center gap-3 rounded-[14px] border-[0.8px] border-[#f2f2f2] bg-[#f3f3f4] p-2">
       <div className="flex self-stretch items-center justify-center p-2">
@@ -1284,11 +1519,18 @@ function ActivityRow() {
       <div className="h-12 w-px bg-[#d9d9dd]" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <h3 className="text-lg font-medium leading-7 tracking-[0.09px] text-[#121212]">
-          Team Meeting
+          {activity?.title ?? "Team Meeting"}
         </h3>
         <p className="text-sm font-normal leading-5 tracking-[0.07px] text-[#4a4a4a]">
-          Oct 26, 2026 <span className="mx-1">.</span> 10:00 AM
+          {activity
+            ? formatActivityTimestamp(activity.occurredAt)
+            : "Oct 26, 2026 . 10:00 AM"}
         </p>
+        {activity?.description ? (
+          <p className="mt-1 text-xs font-normal leading-4 text-[#64748b]">
+            {activity.description}
+          </p>
+        ) : null}
       </div>
     </article>
   );
@@ -1298,9 +1540,18 @@ function TrainerDetailsModal({
   trainer,
   onClose,
 }: {
-  trainer: (typeof trainers)[number];
+  trainer: AdminTrainer;
   onClose: () => void;
 }) {
+  const {
+    data: trainerDetails,
+    isLoading: isLoadingTrainerDetails,
+    isError: isTrainerDetailsError,
+    error: trainerDetailsError,
+    refetch: refetchTrainerDetails,
+  } = useAdminTrainer(trainer.id);
+  const displayTrainer = trainerDetails ?? trainer;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1326,7 +1577,7 @@ function TrainerDetailsModal({
             id="trainer-details-title"
             className="text-xl font-medium leading-7 tracking-[0.1px] text-[#101828]"
           >
-            Member Details
+            Trainer Details
           </h2>
           <button
             type="button"
@@ -1342,23 +1593,62 @@ function TrainerDetailsModal({
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-4">
               <div className="flex min-w-0 flex-1 items-center gap-4">
-                <div className="size-24 shrink-0 rounded-full border-4 border-white bg-[#d1d6db] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]" />
+                {displayTrainer.profileImageUrl ? (
+                  <Image
+                    src={displayTrainer.profileImageUrl}
+                    alt=""
+                    width={96}
+                    height={96}
+                    className="size-24 shrink-0 rounded-full border-4 border-white bg-[#d1d6db] object-cover shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]"
+                  />
+                ) : (
+                  <div className="size-24 shrink-0 rounded-full border-4 border-white bg-[#d1d6db] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]" />
+                )}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-2xl font-medium leading-8 tracking-[0.12px] text-[#121212]">
-                    {trainer.name.replace("...", "")}
+                    {displayTrainer.name.replace("...", "")}
                   </h3>
                   <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
-                    User ID : {trainer.id}
+                    User ID : {displayTrainer.id}
                   </p>
                   <p className="text-lg font-normal leading-7 tracking-[0.09px] text-[#4a4a4a]">
-                    Joined : Oct 24, 2023
+                    Joined : {displayTrainer.joined || "-"}
                   </p>
                 </div>
               </div>
-              <span className="flex h-6 items-center justify-center rounded bg-[#22c55e]/10 px-2 text-base font-medium leading-6 tracking-[0.08px] text-[#16a34a]">
-                Active
+              <span className={cn(
+                "flex h-6 items-center justify-center rounded px-2 text-base font-medium leading-6 tracking-[0.08px]",
+                displayTrainer.status === "Active" ? "bg-[#dcfce7] text-[#16a34a]" :
+                displayTrainer.status === "Pending" ? "bg-[#fef3c7] text-[#d97706]" :
+                displayTrainer.status === "Suspended" ? "bg-[#fee2e2] text-[#dc2626]" :
+                displayTrainer.status === "Inactive" ? "bg-[#f1f5f9] text-[#64748b]" :
+                "bg-[#f2f2f2] text-[#7a7a7a]"
+              )}>
+                {displayTrainer.status}
               </span>
             </div>
+
+            {isLoadingTrainerDetails ? (
+              <p className="rounded-lg bg-[#fdf2f4] px-3 py-2 text-xs font-medium text-[#64748b]">
+                Loading full trainer profile...
+              </p>
+            ) : null}
+            {isTrainerDetailsError ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-[#fee2e2] bg-[#fff7f7] px-3 py-2">
+                <p className="text-xs font-medium text-[#dc2626]">
+                  {trainerDetailsError instanceof Error
+                    ? trainerDetailsError.message
+                    : "Unable to load full trainer profile."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => refetchTrainerDetails()}
+                  className="shrink-0 rounded bg-white px-2 py-1 text-xs font-medium text-[#121212]"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
 
             <div className="border-t border-[#e0e0e0] pt-2">
               <div className="flex items-center gap-2">
@@ -1368,9 +1658,20 @@ function TrainerDetailsModal({
                 </p>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <DocumentButton>ID Front</DocumentButton>
-                <DocumentButton>ID Back</DocumentButton>
+                <DocumentButton href={displayTrainer.idCardFrontImageUrl}>
+                  ID Front
+                </DocumentButton>
+                <DocumentButton href={displayTrainer.idCardBackImageUrl}>
+                  ID Back
+                </DocumentButton>
               </div>
+              {displayTrainer.idCardType || displayTrainer.idCardNumber ? (
+                <p className="mt-2 text-xs font-medium text-[#64748b]">
+                  {[displayTrainer.idCardType, displayTrainer.idCardNumber]
+                    .filter(Boolean)
+                    .join(" - ")}
+                </p>
+              ) : null}
             </div>
 
             <section className="flex flex-col gap-2">
@@ -1378,20 +1679,20 @@ function TrainerDetailsModal({
                 Personal Bio
               </h3>
               <div className="flex h-24 rounded-[18px] border border-[#e0e0e0] bg-white p-4 text-sm font-normal leading-5 tracking-[0.07px] text-[#7a7a7a]">
-                e.g. NASM CPT
+                {displayTrainer.bio || displayTrainer.tagline || "No bio provided."}
               </div>
             </section>
 
             <div className="grid grid-cols-2 gap-1.5">
               <InfoTile
                 icon={<CalendarSolidIcon className="size-6 text-[#fb7185]" />}
-                value="5"
+                value={String(displayTrainer.instructorExperience || "-")}
                 unit="yr"
                 label="been an instructor"
               />
               <InfoTile
                 icon={<DocumentNormalIcon className="size-6 text-[#fb7185]" />}
-                value="Yoga"
+                value={displayTrainer.certifications || "-"}
                 label="certifications/qualifications"
                 valueBadge
               />
@@ -1400,18 +1701,25 @@ function TrainerDetailsModal({
             <TagPanel
               icon={<StretchIcon className="size-6 text-[#f7869a]" />}
               caption="physical fitness classes"
-              tags={["Yoga"]}
+              tags={[displayTrainer.classesTaught || "Not provided"]}
             />
 
             <ContactCard
               icon={<ContactBookIcon className="size-6 text-[#f7869a]" />}
               title="Contact Info"
-              lines={["(225) 555-0118", "Example@email.com"]}
+              lines={[
+                displayTrainer.phoneNumber || "No phone number",
+                displayTrainer.email || "No email",
+              ]}
             />
             <ContactCard
               icon={<LocationPinIcon className="size-6 text-[#f7869a]" />}
               title="Location"
-              lines={["578 Boolean Ave, New York, NY, Turing St"]}
+              lines={[
+                [displayTrainer.location, displayTrainer.state]
+                  .filter(Boolean)
+                  .join(", ") || "No location provided",
+              ]}
             />
 
             <section className="flex flex-col gap-3">
@@ -1420,8 +1728,18 @@ function TrainerDetailsModal({
                   Recent Activity
                 </h3>
               </div>
-              <ActivityRow />
-              <ActivityRow />
+              {displayTrainer.recentActivity?.length ? (
+                displayTrainer.recentActivity.map((activity) => (
+                  <ActivityRow
+                    key={`${activity.type}-${activity.occurredAt}`}
+                    activity={activity}
+                  />
+                ))
+              ) : (
+                <p className="rounded-[14px] border border-[#f2f2f2] bg-[#fafafa] p-4 text-sm font-medium text-[#7a7a7a]">
+                  No recent activity yet.
+                </p>
+              )}
             </section>
           </div>
         </div>
@@ -1442,8 +1760,16 @@ function TrainerDetailsModal({
 function TrainerSection({
   onOpenTrainerDetails,
 }: {
-  onOpenTrainerDetails: (trainer: (typeof trainers)[number]) => void;
+  onOpenTrainerDetails: (trainer: AdminTrainer) => void;
 }) {
+  const {
+    data: apiTrainers = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useAdminTrainers();
+
   return (
     <section
       id="trainers"
@@ -1467,12 +1793,55 @@ function TrainerSection({
               </tr>
             </thead>
             <tbody>
-              {trainers.map((trainer, index) => (
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="border-b border-dashed border-[#c4cdd5] px-3 py-10 text-center text-sm font-medium text-[#7a7a7a]"
+                  >
+                    Loading trainers...
+                  </td>
+                </tr>
+              ) : null}
+              {isError ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="border-b border-dashed border-[#c4cdd5] px-3 py-10 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <p className="text-sm font-medium text-[#dc2626]">
+                        {error instanceof Error
+                          ? error.message
+                          : "Unable to load trainers."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => refetch()}
+                        className="rounded-lg bg-[#fdf2f4] px-4 py-2 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f9e8ec]"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoading && !isError && apiTrainers.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="border-b border-dashed border-[#c4cdd5] px-3 py-10 text-center text-sm font-medium text-[#7a7a7a]"
+                  >
+                    No trainers found.
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoading && !isError ? apiTrainers.map((trainer, index) => (
                 <tr key={`${trainer.name}-${index}`} className="h-[52px]">
                   <td className="border-b border-dashed border-[#c4cdd5] px-3 py-2">
                     <div className="flex min-w-0 items-center gap-3">
                       <Image
-                        src="/figma-assets/trainer-avatar.png"
+                        src={trainer.profileImageUrl || "/figma-assets/trainer-avatar.png"}
                         alt=""
                         width={32}
                         height={32}
@@ -1511,7 +1880,7 @@ function TrainerSection({
                     </button>
                   </td>
                 </tr>
-              ))}
+              )) : null}
             </tbody>
           </table>
         </div>
@@ -1527,14 +1896,23 @@ function VerificationSection({
   onOpenTrainerDetails,
 }: {
   onNavigate: (section: DashboardSection) => void;
-  onOpenMemberDetails: (member: (typeof members)[number]) => void;
-  onOpenTrainerDetails: (trainer: (typeof trainers)[number]) => void;
+  onOpenMemberDetails: (member: AdminMember) => void;
+  onOpenTrainerDetails: (trainer: AdminTrainer) => void;
 }) {
   const [filter, setFilter] = useState<"members" | "trainers">("members");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [rejectionRequest, setRejectionRequest] = useState<any | null>(null);
+  const [rejectionRequest, setRejectionRequest] =
+    useState<AdminVerification | null>(null);
+  const requestType = filter === "members" ? "MEMBER" : "TRAINER";
+  const {
+    data: verifications = [],
+    error,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useGetAdminVerificationsQuery(requestType);
 
-  const list = filter === "members" ? pendingApprovals.members : pendingApprovals.trainers;
+  const isEmpty = !isLoading && !error && verifications.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden">
@@ -1599,16 +1977,47 @@ function VerificationSection({
           aria-label="Pending verification requests"
           className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
-          {list.map((request, index) => (
-            <VerificationCard
-              key={`${request.id}-${index}`}
-              request={request}
-              onNavigate={onNavigate}
-              onOpenMemberDetails={onOpenMemberDetails}
-              onOpenTrainerDetails={onOpenTrainerDetails}
-              onReject={setRejectionRequest}
-            />
-          ))}
+          {isLoading
+            ? Array.from({ length: 8 }).map((_, index) => (
+              <VerificationCardSkeleton key={index} />
+            ))
+            : null}
+          {!isLoading && error ? (
+            <div className="col-span-full flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[#c4cdd5] bg-white p-6 text-center">
+              <p className="text-base font-semibold text-[#121212]">
+                Could not load verification requests.
+              </p>
+              <p className="text-sm text-[#7a7a7a]">
+                {getErrorMessage(error)}
+              </p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="rounded-lg bg-[#121212] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-black/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
+          {!isLoading && !error
+            ? verifications.map((request) => (
+              <VerificationCard
+                key={request.userId}
+                request={request}
+                isFetching={isFetching}
+                onNavigate={onNavigate}
+                onOpenMemberDetails={onOpenMemberDetails}
+                onOpenTrainerDetails={onOpenTrainerDetails}
+                onReject={setRejectionRequest}
+              />
+            ))
+            : null}
+          {isEmpty ? (
+            <div className="col-span-full flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-[#c4cdd5] bg-white p-6 text-center text-sm font-medium text-[#7a7a7a]">
+              No pending {filter === "members" ? "member" : "trainer"} verification
+              requests right now.
+            </div>
+          ) : null}
         </section>
       </div>
 
@@ -1617,7 +2026,9 @@ function VerificationSection({
           request={rejectionRequest}
           onClose={() => setRejectionRequest(null)}
           onConfirm={(reason) => {
-            toast.error(`Rejected: ${rejectionRequest.name}. Reason: ${reason}`);
+            toast.error(
+              `Rejected: ${getVerificationName(rejectionRequest)}. Reason: ${reason}`,
+            );
             setRejectionRequest(null);
           }}
         />
@@ -1628,30 +2039,38 @@ function VerificationSection({
 
 function VerificationCard({
   request,
+  isFetching,
   onNavigate,
   onOpenMemberDetails,
   onOpenTrainerDetails,
   onReject,
 }: {
-  request: any;
+  request: AdminVerification;
+  isFetching: boolean;
   onNavigate: (section: DashboardSection) => void;
-  onOpenMemberDetails: (member: (typeof members)[number]) => void;
-  onOpenTrainerDetails: (trainer: (typeof trainers)[number]) => void;
-  onReject: (request: any) => void;
+  onOpenMemberDetails: (member: AdminMember) => void;
+  onOpenTrainerDetails: (trainer: AdminTrainer) => void;
+  onReject: (request: AdminVerification) => void;
 }) {
+  const [approveVerification, { isLoading: isApproving }] =
+    useApproveAdminVerificationMutation();
+  const isMember = request.requestType === "MEMBER";
+  const name = getVerificationName(request);
+  const submitted = formatVerificationDate(request.submittedAt);
+  const avatarSrc =
+    request.profileImageUrl
+      ? request.profileImageUrl
+      : isMember
+        ? "/figma-assets/member-avatar.png"
+        : "/figma-assets/trainer-avatar.png";
+
   const handleProfileClick = () => {
-    if (request.type === "Member") {
-      const member = members.find((m) => m.id === request.id);
-      if (member) {
-        onNavigate("members");
-        onOpenMemberDetails(member);
-      }
+    if (isMember) {
+      onNavigate("members");
+      onOpenMemberDetails(mapVerificationToMember(request));
     } else {
-      const trainer = trainers.find((t) => t.id === request.id);
-      if (trainer) {
-        onNavigate("trainers");
-        onOpenTrainerDetails(trainer);
-      }
+      onNavigate("trainers");
+      onOpenTrainerDetails(mapVerificationToTrainer(request));
     }
   };
 
@@ -1663,7 +2082,7 @@ function VerificationCard({
           className="flex min-w-0 flex-1 items-center gap-3 text-left transition-opacity hover:opacity-80"
         >
           <Image
-            src={request.type === "Member" ? "/figma-assets/member-avatar.png" : "/figma-assets/trainer-avatar.png"}
+            src={avatarSrc}
             alt=""
             width={48}
             height={48}
@@ -1671,41 +2090,46 @@ function VerificationCard({
           />
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold leading-6 tracking-[0.08px] text-[#121212]">
-              {request.name}
+              {name}
             </h3>
             <p className="text-xs font-normal leading-4 tracking-[0.06px] text-[#4a4a4a]">
-              {request.id}
+              {request.userCode || request.userId}
             </p>
           </div>
         </button>
-        <span className="flex h-6 shrink-0 items-center justify-center rounded bg-[#fef3c7] px-2 py-0.5 font-['Public_Sans',Arial,sans-serif] text-sm font-semibold leading-[22px] tracking-[0.22px] text-[#d97706]">
-          Pending
+        <span className={cn(
+          "flex h-6 shrink-0 items-center justify-center rounded px-2 py-0.5 font-['Public_Sans',Arial,sans-serif] text-sm font-semibold leading-[22px] tracking-[0.22px]",
+          request.verificationStatus === "APPROVED"
+            ? "bg-[#dcfce7] text-[#16a34a]"
+            : request.verificationStatus === "REJECTED"
+              ? "bg-[#fee2e2] text-[#dc2626]"
+              : "bg-[#fef3c7] text-[#d97706]"
+        )}>
+          {formatVerificationStatus(request.verificationStatus)}
         </span>
       </div>
 
       <div className="mt-[13px] flex flex-col gap-3 rounded-xl border-[0.5px] border-[#f2f2f2] bg-[#f7f7f7] p-3">
-        <VerificationDetail label="Request Type" value={request.type} />
-        <VerificationDetail label="Submitted" value={request.submitted} />
+        <VerificationDetail label="Request Type" value={formatRequestType(request.requestType)} />
+        <VerificationDetail label="Submitted" value={submitted} />
+        <VerificationDetail label="ID Type" value={request.idCardType ?? "-"} />
+        <VerificationDetail label="ID Number" value={request.idCardNumber ?? "-"} />
         <div className="flex flex-col gap-2 border-t border-[#e0e0e0] py-2">
           <div className="flex items-center gap-2">
             <ShieldIcon className="size-6 text-[#121212]" />
             <p className="text-sm font-normal leading-5 tracking-[0.07px] text-[#121212]">
-              Documents Provided
+              {request.documentsProvided ? "Documents Provided" : "No Documents Provided"}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              className="flex h-[43px] items-center justify-center rounded-lg bg-[#fdf2f4] p-3.5 text-[10px] font-medium leading-[15px] text-[#64748b] transition-colors hover:bg-[#f9e8ec] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-            >
-              ID Front
-            </button>
-            <button
-              type="button"
-              className="flex h-[43px] items-center justify-center rounded-lg bg-[#fdf2f4] p-3.5 text-[10px] font-medium leading-[15px] text-[#64748b] transition-colors hover:bg-[#f9e8ec] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-            >
-              ID Back
-            </button>
+            <DocumentPreview
+              href={request.idCardFrontImageUrl}
+              label="ID Front"
+            />
+            <DocumentPreview
+              href={request.idCardBackImageUrl}
+              label="ID Back"
+            />
           </div>
         </div>
       </div>
@@ -1713,14 +2137,20 @@ function VerificationCard({
       <div className="mt-[7px] grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={(e) => {
+          disabled={isApproving || isFetching}
+          onClick={async (e) => {
             e.stopPropagation();
-            toast.success(`Approved! Notification sent to ${request.name}.`);
+            try {
+              await approveVerification(request.userId).unwrap();
+              toast.success(`Approved! Notification sent to ${name}.`);
+            } catch (error) {
+              toast.error(getErrorMessage(error));
+            }
           }}
-          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#dcfce7] px-6 py-3 text-sm font-semibold leading-6 tracking-[0.08px] text-[#16a34a] transition-colors hover:bg-[#c9f7d9] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20"
+          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#dcfce7] px-6 py-3 text-sm font-semibold leading-6 tracking-[0.08px] text-[#16a34a] transition-colors hover:bg-[#c9f7d9] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <CheckIcon className="size-5" />
-          Approve
+          {isApproving ? "Approving" : "Approve"}
         </button>
         <button
           type="button"
@@ -1729,7 +2159,7 @@ function VerificationCard({
             onReject(request);
           }}
           className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#fee2e2] px-6 py-3 text-sm font-semibold leading-6 tracking-[0.08px] text-[#dc2626] transition-colors hover:bg-[#fbd4d4] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#dc2626]/20"
-          aria-label={`Reject ${request.name}`}
+          aria-label={`Reject ${name}`}
         >
           <CheckIcon className="size-5" />
           Reject
@@ -1739,12 +2169,173 @@ function VerificationCard({
   );
 }
 
+function VerificationCardSkeleton() {
+  return (
+    <Card className="w-full rounded-2xl border-[#f2f2f2] bg-white p-5 shadow-[0_4px_10px_rgba(0,0,0,0.03)]">
+      <div className="flex items-start gap-3">
+        <div className="size-12 rounded-full bg-[#f2f2f2]" />
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="h-4 w-2/3 rounded bg-[#f2f2f2]" />
+          <div className="h-3 w-1/2 rounded bg-[#f2f2f2]" />
+        </div>
+        <div className="h-6 w-16 rounded bg-[#fef3c7]" />
+      </div>
+      <div className="mt-[13px] flex flex-col gap-3 rounded-xl border-[0.5px] border-[#f2f2f2] bg-[#f7f7f7] p-3">
+        <div className="h-4 rounded bg-[#ececec]" />
+        <div className="h-4 rounded bg-[#ececec]" />
+        <div className="h-16 rounded bg-[#ececec]" />
+      </div>
+      <div className="mt-[7px] grid grid-cols-2 gap-2">
+        <div className="h-12 rounded-lg bg-[#dcfce7]" />
+        <div className="h-12 rounded-lg bg-[#fee2e2]" />
+      </div>
+    </Card>
+  );
+}
+
+function DocumentPreview({
+  href,
+  label,
+}: {
+  href?: string | null;
+  label: string;
+}) {
+  if (!href) {
+    return (
+      <span className="flex h-[96px] cursor-not-allowed items-center justify-center rounded-lg bg-[#fdf2f4] p-3.5 text-[10px] font-medium leading-[15px] text-[#64748b] opacity-50">
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="group relative block h-[96px] overflow-hidden rounded-lg bg-[#fdf2f4] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
+      onClick={(event) => event.stopPropagation()}
+      aria-label={`Open ${label}`}
+    >
+      <Image
+        src={href}
+        alt={label}
+        fill
+        sizes="(max-width: 768px) 45vw, 160px"
+        className="object-cover transition-transform group-hover:scale-105"
+      />
+      <span className="absolute inset-x-0 bottom-0 bg-black/55 px-2 py-1 text-center text-[10px] font-semibold leading-[15px] text-white">
+        {label}
+      </span>
+    </a>
+  );
+}
+
+function getVerificationName(request: AdminVerification) {
+  const fullName = [request.firstName, request.lastName].filter(Boolean).join(" ");
+
+  return request.displayName || fullName || request.username || request.email;
+}
+
+function formatRequestType(type: AdminVerification["requestType"]) {
+  return type === "MEMBER" ? "Member" : "Trainer";
+}
+
+function formatVerificationStatus(status: AdminVerification["verificationStatus"]) {
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+}
+
+function verificationStatusToDisplayStatus(status: AdminVerification["verificationStatus"]) {
+  if (status === "APPROVED") return "Active";
+  if (status === "REJECTED") return "Suspended";
+  if (status === "PENDING") return "Pending";
+  return formatVerificationStatus(status);
+}
+
+function formatVerificationDate(dateValue?: string | null) {
+  if (!dateValue) return "-";
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function mapVerificationToMember(request: AdminVerification): AdminMember {
+  return {
+    id: request.userId,
+    email: request.email,
+    name: getVerificationName(request),
+    username: request.username,
+    profileImageUrl: request.profileImageUrl,
+    idCardType: request.idCardType,
+    idCardNumber: request.idCardNumber,
+    idCardFrontImageUrl: request.idCardFrontImageUrl,
+    idCardBackImageUrl: request.idCardBackImageUrl,
+    verificationStatus: request.verificationStatus,
+    joined: formatVerificationDate(request.submittedAt),
+    createdAt: request.submittedAt ?? undefined,
+    status: verificationStatusToDisplayStatus(request.verificationStatus),
+    recentActivity: [],
+  };
+}
+
+function mapVerificationToTrainer(request: AdminVerification): AdminTrainer {
+  return {
+    id: request.userId,
+    email: request.email,
+    name: getVerificationName(request),
+    username: request.username,
+    user: request.username || request.email,
+    profileImageUrl: request.profileImageUrl,
+    idCardType: request.idCardType,
+    idCardNumber: request.idCardNumber,
+    idCardFrontImageUrl: request.idCardFrontImageUrl,
+    idCardBackImageUrl: request.idCardBackImageUrl,
+    verificationStatus: request.verificationStatus,
+    joined: formatVerificationDate(request.submittedAt),
+    createdAt: request.submittedAt ?? undefined,
+    status: verificationStatusToDisplayStatus(request.verificationStatus),
+    specialty: "-",
+    classes: "-",
+    rating: "-",
+    recentActivity: [],
+  };
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof ApiError || error instanceof Error) return error.message;
+
+  if (error && typeof error === "object") {
+    const data = "data" in error ? (error as { data?: unknown }).data : undefined;
+
+    if (data && typeof data === "object" && "message" in data) {
+      const message = (data as { message?: unknown }).message;
+
+      if (typeof message === "string") return message;
+    }
+
+    if ("message" in error) {
+      const message = (error as { message?: unknown }).message;
+
+      if (typeof message === "string") return message;
+    }
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
 function RejectionModal({
   request,
   onClose,
   onConfirm,
 }: {
-  request: any;
+  request: AdminVerification;
   onClose: () => void;
   onConfirm: (reason: string) => void;
 }) {
@@ -1791,7 +2382,7 @@ function RejectionModal({
               Rejecting request for:
             </p>
             <p className="text-base font-semibold text-[#121212]">
-              {request.name} ({request.id})
+              {getVerificationName(request)} ({request.userCode || request.userId})
             </p>
           </div>
 
@@ -2731,9 +3322,13 @@ function StatusBadge({ status }: { status: string }) {
   const styles =
     status === "Active"
       ? "bg-[#dcfce7] text-[#16a34a]"
-      : status === "Suspended"
-        ? "bg-[#fee2e2] text-[#dc2626]"
-        : "bg-[#f2f2f2] text-[#7a7a7a]";
+      : status === "Pending"
+        ? "bg-[#fef3c7] text-[#d97706]"
+        : status === "Suspended"
+          ? "bg-[#fee2e2] text-[#dc2626]"
+          : status === "Inactive"
+            ? "bg-[#f1f5f9] text-[#64748b]"
+            : "bg-[#f2f2f2] text-[#7a7a7a]";
 
   return (
     <span

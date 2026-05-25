@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Work_Sans } from "next/font/google";
 import { ToastContainer } from "react-toastify";
+import { Providers } from "./providers";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
@@ -25,7 +26,7 @@ export default function RootLayout({
       className={`${workSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <Providers>{children}</Providers>
         <ToastContainer
           position="top-right"
           autoClose={3000}
