@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { RevenueSection } from "@/components/dashboard/revenue-section";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,6 +38,7 @@ const navSections = [
   { label: "Member", section: "members", icon: MembersIcon },
   { label: "Trainer", section: "trainers", icon: TrainerIcon },
   { label: "Verification", section: "verification", icon: ShieldIcon },
+  { label: "Revenue", section: "revenue", icon: RevenueNavIcon },
   { label: "Transactions", section: "transactions", icon: CardIcon },
   { label: "Support", section: "support", icon: SupportIcon },
 ];
@@ -297,6 +299,7 @@ type DashboardSection =
   | "members"
   | "trainers"
   | "verification"
+  | "revenue"
   | "transactions"
   | "support"
   | "settings";
@@ -401,6 +404,7 @@ export default function Home() {
                 onOpenTrainerDetails={setSelectedTrainer}
               />
             ) : null}
+            {activeSection === "revenue" ? <RevenueSection /> : null}
             {activeSection === "transactions" ? <TransactionsSection /> : null}
             {activeSection === "support" ? <SupportSection /> : null}
             {activeSection === "settings" ? <SettingsSection /> : null}
@@ -408,6 +412,7 @@ export default function Home() {
               activeSection !== "members" &&
               activeSection !== "trainers" &&
               activeSection !== "verification" &&
+              activeSection !== "revenue" &&
               activeSection !== "transactions" &&
               activeSection !== "support" &&
               activeSection !== "settings" ? (
@@ -3478,6 +3483,24 @@ function CardIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
       <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
       <path d="M3 10h18M7 15h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function RevenueNavIcon({ className, active }: { className?: string; active?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle
+        cx="12" cy="12" r="9"
+        stroke={active ? "white" : "currentColor"}
+        strokeWidth="1.7"
+      />
+      <path
+        d="M12 7v1m0 8v1m3-6.5a3 3 0 0 0-3-1.5 2.5 2.5 0 0 0 0 5 2.5 2.5 0 0 1 0 5A3 3 0 0 1 9 18"
+        stroke={active ? "white" : "currentColor"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
