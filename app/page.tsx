@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { RevenueSection } from "@/components/dashboard/revenue-section";
@@ -29,7 +29,24 @@ import {
   useDashboardActivities,
   useDashboardSummary,
 } from "@/hooks/use-dashboard";
+import {
+  useFaqs,
+  useCreateFaq,
+  useUpdateFaq,
+  useDeleteFaq,
+  useReorderFaqs,
+  useStaticContent,
+  useSaveStaticContent,
+} from "@/hooks/use-content";
+import {
+  useHelpTickets,
+  useHelpTicket,
+  useMarkTicketInReview,
+  useResolveTicket,
+} from "@/hooks/use-support";
 import type { DashboardSummary } from "@/lib/types/dashboard.types";
+import type { StaticContentKey } from "@/lib/types/content.types";
+import type { TicketStatus } from "@/lib/types/support.types";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -233,66 +250,6 @@ const transactions = [
   },
 ];
 
-const supportTickets = [
-  {
-    id: "T-001",
-    status: "New",
-    title: "Auto-Approve Bookings",
-    date: "15 May 26 8:00 pm",
-    replies: "",
-    expanded: false,
-    comments: [],
-    replyBox: true,
-  },
-  {
-    id: "T-001",
-    status: "In Progress",
-    title: "Auto-Approve Bookings",
-    date: "15 May 26 8:00 pm",
-    expanded: true,
-    comments: [
-      {
-        author: "Deja Brady",
-        initial: "D",
-        date: "15 May 2020 8:00 pm",
-        body: "I filled in Section 2 of the AM2 checklist yesterday but when I logged in today it was all blank again. I have tried on Chrome and Firefox.",
-        tone: "neutral",
-      },
-      {
-        author: "Deja Brady",
-        initial: "D",
-        date: "15 May 2020 8:00 pm",
-        body: "Hi James, we are looking into this. Could you try clearing your browser cache and trying again?",
-        tone: "reply",
-      },
-    ],
-    replyBox: true,
-  },
-  {
-    id: "T-001",
-    status: "Resolved",
-    title: "Auto-Approve Bookings",
-    date: "15 May 26 8:00 pm",
-    expanded: true,
-    comments: [
-      {
-        author: "Deja Brady",
-        initial: "D",
-        date: "15 May 26 8:00 pm",
-        body: "I filled in Section 2 of the AM2 checklist yesterday but when I logged in today it was all blank again. I have tried on Chrome and Firefox.",
-        tone: "neutral",
-      },
-      {
-        author: "Deja Brady",
-        initial: "D",
-        date: "15 May 26 8:00 pm",
-        body: "Hi James, we are looking into this. Could you try clearing your browser cache and trying again?",
-        tone: "reply",
-      },
-    ],
-    resolved: true,
-  },
-];
 
 type DashboardSection =
   | "overview"
@@ -2781,36 +2738,83 @@ function TransactionStatusBadge({ status }: { status: string }) {
   );
 }
 
-function SupportSection() {
-  return (
-    <section
-      id="support"
-      aria-labelledby="support-title"
-      className="min-h-0 flex-1 overflow-hidden"
-    >
-      <Card className="flex h-full min-h-0 flex-col gap-3 overflow-hidden rounded-xl border-[#d6e6f2] bg-white p-3.5 shadow-none">
-        <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:px-2.5">
-          <h1
-            id="support-title"
-            className="min-w-0 flex-1 text-xl font-semibold leading-7 tracking-[0.1px] text-[#0f172a] lg:text-2xl"
-          >
-            Member
-          </h1>
-          <button
-            type="button"
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#f2f2f2] bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)] transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 lg:w-auto"
-          >
-            <TuneIcon className="size-6" />
-            Filter
-          </button>
-        </div>
+const TICKET_FILTER_OPTIONS: Array<{ label: string; value: TicketStatus | "ALL" }> = [
+  { label: "All",        value: "ALL" },
+  { label: "Open",       value: "OPEN" },
+  { label: "In Review",  value: "IN_REVIEW" },
+  { label: "Resolved",   value: "RESOLVED" },
+  { label: "Closed",     value: "CLOSED" },
+];
 
-        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-[#fdf2f4] p-2">
-          <div className="flex min-w-[840px] flex-col gap-3">
-            {supportTickets.map((ticket, index) => (
-              <SupportTicketCard key={`${ticket.status}-${index}`} ticket={ticket} />
+function SupportSection() {
+  const [filter, setFilter] = useState<TicketStatus | "ALL">("ALL");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const status = filter === "ALL" ? undefined : filter;
+  const { data: tickets = [], isLoading, isError, refetch } = useHelpTickets(status);
+
+  return (
+    <section id="support" aria-labelledby="support-title" className="min-h-0 flex-1 overflow-hidden">
+      <Card className="flex h-full min-h-0 flex-col gap-3 overflow-hidden rounded-xl border-[#d6e6f2] bg-white p-3.5 shadow-none">
+
+        {/* Header */}
+        <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:px-2.5">
+          <div className="min-w-0 flex-1">
+            <h1 id="support-title" className="text-xl font-semibold leading-7 tracking-[0.1px] text-[#0f172a] lg:text-2xl">
+              Help & Support
+            </h1>
+            <p className="text-sm font-normal text-[#7a7a7a]">Manage customer support tickets</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
+            {TICKET_FILTER_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { setFilter(opt.value); setExpandedId(null); }}
+                className={cn(
+                  "flex h-9 items-center justify-center rounded-lg px-4 text-sm font-medium transition-colors",
+                  filter === opt.value
+                    ? "bg-[linear-gradient(141deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] text-white shadow-[0_0_0_0_rgba(247,134,154,0.3)]"
+                    : "border border-[#e0e0e0] bg-white text-[#4a4a4a] hover:bg-[#fdf2f4] hover:text-[#f7869a]",
+                )}
+                aria-pressed={filter === opt.value}
+              >
+                {opt.label}
+              </button>
             ))}
           </div>
+        </div>
+
+        {/* List */}
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-[#fdf2f4] p-2">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-2 text-sm font-medium text-[#7a7a7a]">
+                <div className="size-7 animate-spin rounded-full border-2 border-[#f7869a] border-t-transparent" />
+                Loading tickets…
+              </div>
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center gap-3 py-10">
+              <p className="text-sm font-medium text-[#dc2626]">Failed to load support tickets.</p>
+              <button type="button" onClick={() => refetch()} className="rounded-lg bg-[#fdf2f4] px-4 py-2 text-sm font-medium text-[#121212] hover:bg-[#f9e8ec]">Retry</button>
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-dashed border-[#c4cdd5] text-sm font-medium text-[#7a7a7a]">
+              No {filter === "ALL" ? "" : filter.replace("_", " ").toLowerCase() + " "}tickets found.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {tickets.map((ticket) => (
+                <SupportTicketCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  isExpanded={expandedId === ticket.id}
+                  onToggle={() => setExpandedId(expandedId === ticket.id ? null : ticket.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </Card>
     </section>
@@ -2819,167 +2823,194 @@ function SupportSection() {
 
 function SupportTicketCard({
   ticket,
+  isExpanded,
+  onToggle,
 }: {
-  ticket: (typeof supportTickets)[number];
+  ticket: import("@/lib/types/support.types").HelpTicket;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(ticket.expanded);
+  const { data: details } = useHelpTicket(ticket.id, isExpanded);
+  const display = details ?? ticket;
+
+  const markInReview = useMarkTicketInReview();
+  const resolveTicket = useResolveTicket();
+  const [resolvingAs, setResolvingAs] = useState<"RESOLVED" | "CLOSED" | null>(null);
+  const [adminNote, setAdminNote] = useState("");
+
+  const handleMarkInReview = () => {
+    markInReview.mutate(ticket.id, {
+      onSuccess: () => toast.success("Ticket marked as In Review."),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Action failed."),
+    });
+  };
+
+  const handleResolve = () => {
+    if (!resolvingAs) return;
+    resolveTicket.mutate({ id: ticket.id, payload: { status: resolvingAs, adminNote: adminNote.trim() || undefined } }, {
+      onSuccess: () => {
+        toast.success(`Ticket ${resolvingAs === "RESOLVED" ? "resolved" : "closed"}.`);
+        setResolvingAs(null);
+        setAdminNote("");
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Action failed."),
+    });
+  };
 
   return (
     <article className="rounded-xl border border-[#e2e8f0] bg-white p-3">
-      <div className={cn("flex flex-col gap-3", isExpanded ? "pb-3" : "")}>
-        <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="shrink-0 text-sm font-normal leading-5 tracking-[0.07px] text-[#4a4a68]">
-              {ticket.id}
-            </span>
+      {/* Summary row */}
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 text-left"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex items-center gap-2">
             <SupportStatusBadge status={ticket.status} />
+            <span className="text-xs font-normal text-[#4a4a68]">{ticket.id.slice(0, 8).toUpperCase()}</span>
           </div>
-          {ticket.replies ? (
-            <span className="inline-flex h-[30px] shrink-0 items-center justify-center rounded-[10px] border border-[#d6e6f2] bg-[#eaf4fb] px-[13px] text-sm font-medium leading-5 tracking-[0.07px] text-[#33358e]">
-              {ticket.replies}
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-[#33358e] hover:bg-[#f7f7f7] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-            aria-label={isExpanded ? "Collapse support ticket" : "Expand support ticket"}
-          >
-            {isExpanded ? (
-              <ChevronUpIcon className="size-6" />
-            ) : (
-              <ChevronDownIcon className="size-6" />
-            )}
-          </button>
-        </div>
-
-        <h2 className="text-lg font-medium leading-7 tracking-[0.09px] text-[#0f172a]">
-          {ticket.title}
-        </h2>
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-[#d9d9d9]" aria-hidden="true" />
-          <span className="text-sm font-medium leading-5 tracking-[0.07px] text-[#4a4a4a]">
-            {ticket.date}
-          </span>
-        </div>
-      </div>
-
-      {isExpanded ? (
-        <div className="border-t border-[#e9eef4] pt-4">
-          <div className="flex flex-col gap-4">
-            {ticket.comments.map((comment, index) => (
-              <SupportComment key={`${comment.author}-${index}`} comment={comment} />
-            ))}
-            {ticket.replyBox ? <SupportReplyBox /> : null}
-            {ticket.resolved ? <SupportResolvedAlert /> : null}
+          <h2 className="text-base font-semibold leading-6 text-[#0f172a]">{ticket.subject}</h2>
+          <div className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-[#d9d9d9]" aria-hidden="true" />
+            <time className="text-xs font-medium text-[#4a4a4a]">
+              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(ticket.createdAt))}
+            </time>
           </div>
         </div>
-      ) : null}
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md text-[#33358e] hover:bg-[#f7f7f7]">
+          {isExpanded ? <ChevronUpIcon className="size-5" /> : <ChevronDownIcon className="size-5" />}
+        </span>
+      </button>
+
+      {/* Expanded content */}
+      {isExpanded && (
+        <div className="mt-3 flex flex-col gap-4 border-t border-[#e9eef4] pt-4">
+          {/* Message */}
+          <div className="rounded-lg border border-[#f2f2f2] bg-[#f7f7f7] px-4 py-3">
+            <p className="text-sm font-normal leading-5 text-[#344056]">{display.message}</p>
+          </div>
+
+          {/* Sender info */}
+          {display.sender && (
+            <div className="flex items-center gap-3 rounded-lg border border-[#e0e0e0] bg-white px-3 py-2.5">
+              <span className="flex size-8 items-center justify-center rounded-full bg-[#fdf2f4] text-sm font-semibold text-[#f7869a]">
+                {(display.sender.name ?? display.sender.email)[0]?.toUpperCase()}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-[#121212]">{display.sender.name ?? "Unknown"}</p>
+                <p className="text-xs font-normal text-[#7a7a7a]">{display.sender.email}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Existing admin note */}
+          {display.adminNote && (
+            <div className="flex items-start gap-2 rounded-lg border border-[#e0e0e0] bg-[#fdf2f4] px-3 py-2.5">
+              <InfoCircleIcon className="mt-0.5 size-4 shrink-0 text-[#f7869a]" />
+              <p className="text-sm font-normal text-[#4a4a4a]">{display.adminNote}</p>
+            </div>
+          )}
+
+          {/* Actions */}
+          {ticket.status === "OPEN" && (
+            <button
+              type="button"
+              onClick={handleMarkInReview}
+              disabled={markInReview.isPending}
+              className="flex h-10 items-center justify-center gap-2 self-start rounded-lg bg-[#fef3c7] px-5 text-sm font-semibold text-[#d97706] transition-colors hover:bg-[#fde68a] disabled:opacity-60"
+            >
+              {markInReview.isPending ? "Updating…" : "Mark as In Review"}
+            </button>
+          )}
+
+          {ticket.status === "IN_REVIEW" && (
+            <>
+              {resolvingAs ? (
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-[#121212]">
+                    Admin note <span className="font-normal text-[#7a7a7a]">(optional)</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={adminNote}
+                    onChange={(e) => setAdminNote(e.target.value)}
+                    placeholder="Add a note for the user…"
+                    className="w-full rounded-xl border border-[#e0e0e0] p-3 text-sm focus:border-[#f7869a] focus:outline-none focus:ring-4 focus:ring-[#f7869a]/10"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResolve}
+                      disabled={resolveTicket.isPending}
+                      className={cn(
+                        "flex h-10 items-center justify-center rounded-lg px-5 text-sm font-semibold transition-colors disabled:opacity-60",
+                        resolvingAs === "RESOLVED"
+                          ? "bg-[#dcfce7] text-[#16a34a] hover:bg-[#c9f7d9]"
+                          : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]",
+                      )}
+                    >
+                      {resolveTicket.isPending ? "Saving…" : `Confirm ${resolvingAs === "RESOLVED" ? "Resolve" : "Close"}`}
+                    </button>
+                    <button type="button" onClick={() => { setResolvingAs(null); setAdminNote(""); }} className="flex h-10 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white px-5 text-sm font-medium text-[#4a4a4a] hover:bg-[#f7f7f7]">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setResolvingAs("RESOLVED")} className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#dcfce7] px-5 text-sm font-semibold text-[#16a34a] hover:bg-[#c9f7d9]">
+                    <CheckIcon className="size-4" /> Resolve
+                  </button>
+                  <button type="button" onClick={() => setResolvingAs("CLOSED")} className="flex h-10 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white px-5 text-sm font-medium text-[#64748b] hover:bg-[#f1f5f9]">
+                    Close
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {(ticket.status === "RESOLVED" || ticket.status === "CLOSED") && (
+            <div className="flex h-[44px] items-center gap-3 rounded-lg bg-[#dcfce7] px-3">
+              <InfoCircleIcon className="size-5 shrink-0 text-[#16a34a]" />
+              <p className="text-sm font-medium text-[#16a34a]">
+                This ticket has been {ticket.status === "RESOLVED" ? "resolved" : "closed"}.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }
 
 function SupportStatusBadge({ status }: { status: string }) {
   const styles =
-    status === "New"
+    status === "OPEN"
       ? "bg-[#ace3ff] text-[#006599]"
-      : status === "In Progress"
+      : status === "IN_REVIEW"
         ? "bg-[#fef3c7] text-[#f59e0b]"
-        : "bg-[#dcfce7] text-[#16a34a]";
+        : status === "RESOLVED"
+          ? "bg-[#dcfce7] text-[#16a34a]"
+          : "bg-[#f1f5f9] text-[#64748b]";
+
+  const label =
+    status === "OPEN" ? "Open"
+      : status === "IN_REVIEW" ? "In Review"
+        : status === "RESOLVED" ? "Resolved"
+          : status === "CLOSED" ? "Closed"
+            : status;
 
   return (
-    <span
-      className={cn(
-        "inline-flex h-8 items-center rounded-lg px-2 text-sm font-semibold leading-5 tracking-[0.07px] shadow-[0_1px_1px_rgba(0,0,0,0.05)]",
-        styles,
-      )}
-    >
-      {status}
+    <span className={cn("inline-flex h-7 items-center rounded-lg px-2.5 text-xs font-semibold shadow-[0_1px_1px_rgba(0,0,0,0.05)]", styles)}>
+      {label}
     </span>
   );
 }
 
-function SupportComment({
-  comment,
-}: {
-  comment: (typeof supportTickets)[number]["comments"][number];
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 rounded-lg border px-4 py-4",
-        comment.tone === "reply"
-          ? "border-[#e0e0e0] bg-[#fdf2f4]"
-          : "border-[#f2f2f2] bg-[#f7f7f7]",
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-full bg-[#1d4ed8] font-['Public_Sans',Arial,sans-serif] text-sm leading-[22px] tracking-[0.22px] text-white">
-            {comment.initial}
-          </span>
-          <span className="text-sm font-medium leading-5 tracking-[0.07px] text-[#121212]">
-            {comment.author}
-          </span>
-        </div>
-        <span className="text-sm font-medium leading-5 tracking-[0.07px] text-[#4a4a4a]">
-          {comment.date}
-        </span>
-      </div>
-      <p className="text-sm font-normal leading-5 tracking-[0.07px] text-[#344056]">
-        {comment.body}
-      </p>
-    </div>
-  );
-}
-
-function SupportReplyBox() {
-  return (
-    <div className="overflow-hidden rounded-lg">
-      <textarea
-        aria-label="Reply"
-        placeholder="Type your reply..."
-        className="block h-[99px] w-full resize-none border border-[#e9eef4] bg-[#f1f5fa] px-4 py-3 text-sm font-normal leading-5 tracking-[0.07px] text-[#0f172a] outline-none placeholder:text-[#4a4a68] focus:border-[#f7869a]"
-      />
-      <div className="flex items-center justify-between border-x border-b border-[#e9eef4] bg-[#f8f8ff] px-2 py-2.5">
-        <button
-          type="button"
-          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#16a34a] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white hover:bg-[#15803d] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20"
-        >
-          <ClipboardTextIcon className="size-6" />
-          Resolved
-        </button>
-        <button
-          type="button"
-          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white hover:bg-[#242424] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30"
-        >
-          <SendIcon className="size-6" />
-          Send Replay
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function SupportResolvedAlert() {
-  return (
-    <div className="flex h-[50px] items-center gap-4 rounded-lg bg-[#dcfce7] px-3 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]">
-      <InfoCircleIcon className="size-6 shrink-0 text-[#16a34a]" />
-      <p className="min-w-0 flex-1 text-sm font-medium leading-5 tracking-[0.07px] text-[#16a34a]">
-        This ticket has been resolved
-      </p>
-      <button
-        type="button"
-        className="flex h-[30px] shrink-0 items-center justify-center rounded-lg bg-[#f1f5fa] px-3 text-sm font-semibold leading-5 tracking-[0.07px] text-[#0f172a] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16a34a]/20"
-      >
-        Reopen
-      </button>
-    </div>
-  );
-}
-
 function SettingsSection() {
-  const [settingsTab, setSettingsTab] = useState<"profile" | "password" | "faq" | "privacy" | "terms">("profile");
+  const [settingsTab, setSettingsTab] = useState<"profile" | "password" | "faq" | "privacy" | "terms" | "about">("profile");
 
   return (
     <section
@@ -3017,7 +3048,7 @@ function SettingsSection() {
             active={settingsTab === "faq"}
             onClick={() => setSettingsTab("faq")}
           >
-            <InfoCircleIcon className="size-6" />
+            <QuestionIcon className="size-6" />
           </SettingsIconButton>
           <SettingsIconButton
             label="Privacy Policy"
@@ -3033,6 +3064,13 @@ function SettingsSection() {
           >
             <DocumentNormalIcon className="size-6" />
           </SettingsIconButton>
+          <SettingsIconButton
+            label="About Us"
+            active={settingsTab === "about"}
+            onClick={() => setSettingsTab("about")}
+          >
+            <AboutUsIcon className="size-6" />
+          </SettingsIconButton>
         </div>
       </aside>
 
@@ -3040,8 +3078,9 @@ function SettingsSection() {
         {settingsTab === "profile" ? <ProfileSettingsPanel /> : null}
         {settingsTab === "password" ? <PasswordSettingsPanel /> : null}
         {settingsTab === "faq" ? <FAQSettingsPanel /> : null}
-        {settingsTab === "privacy" ? <PrivacySettingsPanel /> : null}
-        {settingsTab === "terms" ? <TermsSettingsPanel /> : null}
+        {settingsTab === "privacy" ? <StaticContentSettingsPanel contentKey="privacy-policy" pageTitle="Privacy Policy" /> : null}
+        {settingsTab === "terms" ? <StaticContentSettingsPanel contentKey="terms-of-service" pageTitle="Terms & Conditions" /> : null}
+        {settingsTab === "about" ? <StaticContentSettingsPanel contentKey="about-us" pageTitle="About Us" /> : null}
       </div>
     </section>
   );
@@ -3113,109 +3152,267 @@ function PasswordSettingsPanel() {
 }
 
 function FAQSettingsPanel() {
-  const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>([
-    { question: "", answer: "" },
-  ]);
+  const { data: rawFaqs = [], isLoading, isError, refetch } = useFaqs();
+  const createFaq = useCreateFaq();
+  const updateFaq = useUpdateFaq();
+  const deleteFaq = useDeleteFaq();
+  const reorderFaqs = useReorderFaqs();
 
-  const addFaq = () => {
-    setFaqs([...faqs, { question: "", answer: "" }]);
+  // sort by order
+  const faqs = [...rawFaqs].sort((a, b) => a.order - b.order);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editQ, setEditQ] = useState("");
+  const [editA, setEditA] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newQ, setNewQ] = useState("");
+  const [newA, setNewA] = useState("");
+
+  const startEdit = (id: string, question: string, answer: string) => {
+    setEditingId(id);
+    setEditQ(question);
+    setEditA(answer);
   };
 
-  const removeFaq = (index: number) => {
-    setFaqs(faqs.filter((_, i) => i !== index));
+  const saveEdit = (id: string) => {
+    if (!editQ.trim()) { toast.error("Question cannot be empty."); return; }
+    updateFaq.mutate({ id, payload: { question: editQ.trim(), answer: editA.trim() } }, {
+      onSuccess: () => { toast.success("FAQ updated."); setEditingId(null); },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Update failed."),
+    });
   };
 
-  const updateFaq = (index: number, field: "question" | "answer", value: string) => {
-    const newFaqs = [...faqs];
-    newFaqs[index][field] = value;
-    setFaqs(newFaqs);
+  const toggleActive = (id: string, current: boolean) => {
+    updateFaq.mutate({ id, payload: { isActive: !current } }, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Update failed."),
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    deleteFaq.mutate(id, {
+      onSuccess: () => { toast.success("FAQ deleted."); setConfirmDeleteId(null); },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Delete failed."),
+    });
+  };
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const next = idx + dir;
+    if (next < 0 || next >= faqs.length) return;
+    const items = faqs.map((f, i) => {
+      if (i === idx) return { id: f.id, order: faqs[next].order };
+      if (i === next) return { id: f.id, order: faqs[idx].order };
+      return { id: f.id, order: f.order };
+    });
+    reorderFaqs.mutate(items, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Reorder failed."),
+    });
+  };
+
+  const handleCreate = () => {
+    if (!newQ.trim()) { toast.error("Question cannot be empty."); return; }
+    const nextOrder = faqs.length > 0 ? Math.max(...faqs.map((f) => f.order)) + 1 : 0;
+    createFaq.mutate({ question: newQ.trim(), answer: newA.trim(), order: nextOrder, isActive: true }, {
+      onSuccess: () => {
+        toast.success("FAQ created.");
+        setIsAddingNew(false);
+        setNewQ("");
+        setNewA("");
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Create failed."),
+    });
   };
 
   return (
     <SettingsPanel
-      icon={<InfoCircleIcon className="size-6 text-[#e06f83]" />}
+      icon={<QuestionIcon className="size-6 text-[#e06f83]" />}
       title="Frequently Asked Questions"
-      actionLabel="Save FAQ Changes"
+      actionLabel="Add New FAQ"
+      onAction={() => { setIsAddingNew(true); setEditingId(null); }}
     >
-      <div className="flex flex-col gap-4 rounded-lg bg-white p-3">
-        {faqs.map((faq, index) => (
-          <div key={index} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex-1 flex flex-col gap-4">
-                <SettingsTextArea
-                  label={`Question ${index + 1}`}
-                  placeholder="Enter question"
-                  value={faq.question}
-                  onChange={(e) => updateFaq(index, "question", e.target.value)}
-                />
-                <SettingsTextArea
-                  label={`Answer ${index + 1}`}
-                  placeholder="Enter answer"
-                  value={faq.answer}
-                  onChange={(e) => updateFaq(index, "answer", e.target.value)}
-                />
-              </div>
-              {faqs.length > 1 && (
-                <div className="flex justify-end lg:mt-8">
-                  <button
-                    type="button"
-                    onClick={() => removeFaq(index)}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#fee2e2] bg-[#fff5f5] text-[#dc2626] transition-colors hover:bg-[#fee2e2]"
-                    title="Remove FAQ"
-                  >
-                    <TrashIcon className="size-5" />
+      <div className="flex flex-col gap-3 rounded-lg bg-white p-3">
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="size-6 animate-spin rounded-full border-2 border-[#f7869a] border-t-transparent" />
+          </div>
+        )}
+        {isError && (
+          <div className="flex flex-col items-center gap-3 py-6">
+            <p className="text-sm font-medium text-[#dc2626]">Failed to load FAQs.</p>
+            <button type="button" onClick={() => refetch()} className="rounded-lg bg-[#fdf2f4] px-4 py-2 text-sm font-medium text-[#121212] hover:bg-[#f9e8ec]">Retry</button>
+          </div>
+        )}
+
+        {!isLoading && !isError && faqs.length === 0 && !isAddingNew && (
+          <p className="py-6 text-center text-sm font-medium text-[#7a7a7a]">No FAQs yet. Click "Add New FAQ" to get started.</p>
+        )}
+
+        {faqs.map((faq, idx) => (
+          <div key={faq.id} className="flex flex-col gap-3 rounded-xl border border-[#f2f2f2] p-3">
+            {editingId === faq.id ? (
+              /* ── Edit mode ── */
+              <div className="flex flex-col gap-3">
+                <SettingsTextArea label="Question" placeholder="Enter question" value={editQ} onChange={(e) => setEditQ(e.target.value)} />
+                <SettingsTextArea label="Answer" placeholder="Enter answer" value={editA} onChange={(e) => setEditA(e.target.value)} rows={4} />
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => saveEdit(faq.id)} disabled={updateFaq.isPending} className="flex h-10 items-center justify-center rounded-lg bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-5 text-sm font-medium text-white disabled:opacity-60">
+                    {updateFaq.isPending ? "Saving…" : "Save"}
                   </button>
+                  <button type="button" onClick={() => setEditingId(null)} className="flex h-10 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white px-5 text-sm font-medium text-[#4a4a4a] hover:bg-[#f7f7f7]">Cancel</button>
                 </div>
-              )}
-            </div>
-            {index < faqs.length - 1 && <hr className="border-[#f2f2f2]" />}
+              </div>
+            ) : confirmDeleteId === faq.id ? (
+              /* ── Delete confirm ── */
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium text-[#dc2626]">Delete this FAQ?</p>
+                <p className="line-clamp-1 text-xs text-[#7a7a7a]">{faq.question}</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => handleDelete(faq.id)} disabled={deleteFaq.isPending} className="flex h-9 items-center justify-center rounded-lg bg-[#fee2e2] px-4 text-sm font-semibold text-[#dc2626] hover:bg-[#fbd4d4] disabled:opacity-60">
+                    {deleteFaq.isPending ? "Deleting…" : "Yes, Delete"}
+                  </button>
+                  <button type="button" onClick={() => setConfirmDeleteId(null)} className="flex h-9 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white px-4 text-sm font-medium text-[#4a4a4a] hover:bg-[#f7f7f7]">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              /* ── Display mode ── */
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="flex-1 text-sm font-semibold leading-5 text-[#121212]">{faq.question}</p>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {/* Active toggle */}
+                    <button type="button" onClick={() => toggleActive(faq.id, faq.isActive)} className={cn("flex h-6 items-center rounded-full px-2 text-xs font-semibold transition-colors", faq.isActive ? "bg-[#dcfce7] text-[#16a34a] hover:bg-[#c9f7d9]" : "bg-[#f2f2f2] text-[#7a7a7a] hover:bg-[#e8e8e8]")} title={faq.isActive ? "Click to deactivate" : "Click to activate"}>
+                      {faq.isActive ? "Active" : "Inactive"}
+                    </button>
+                    {/* Up */}
+                    <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="flex size-7 items-center justify-center rounded-md text-[#7a7a7a] hover:bg-[#f7f7f7] disabled:opacity-30" aria-label="Move up">
+                      <ChevronUpIcon className="size-4" />
+                    </button>
+                    {/* Down */}
+                    <button type="button" onClick={() => move(idx, 1)} disabled={idx === faqs.length - 1} className="flex size-7 items-center justify-center rounded-md text-[#7a7a7a] hover:bg-[#f7f7f7] disabled:opacity-30" aria-label="Move down">
+                      <ChevronDownIcon className="size-4" />
+                    </button>
+                    {/* Edit */}
+                    <button type="button" onClick={() => startEdit(faq.id, faq.question, faq.answer)} className="flex size-7 items-center justify-center rounded-md text-[#7a7a7a] hover:bg-[#fdf2f4] hover:text-[#f7869a]" aria-label="Edit FAQ">
+                      <EditPencilSmIcon className="size-4" />
+                    </button>
+                    {/* Delete */}
+                    <button type="button" onClick={() => setConfirmDeleteId(faq.id)} className="flex size-7 items-center justify-center rounded-md text-[#7a7a7a] hover:bg-[#fee2e2] hover:text-[#dc2626]" aria-label="Delete FAQ">
+                      <TrashIcon className="size-4" />
+                    </button>
+                  </div>
+                </div>
+                {faq.answer && (
+                  <p className="text-sm font-normal leading-5 text-[#4a4a4a]">{faq.answer}</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={addFaq}
-          className="flex h-12 items-center justify-center gap-2 rounded-lg border border-dashed border-[#f7869a] bg-[#fdf2f4] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-[#e06f83] transition-colors hover:bg-[#f9e8ec]"
-        >
-          <PlusIcon className="size-5" />
-          Add More Question
-        </button>
+        {/* Add new FAQ form */}
+        {isAddingNew && (
+          <div className="flex flex-col gap-3 rounded-xl border border-dashed border-[#f7869a] bg-[#fdf2f4] p-3">
+            <p className="text-sm font-semibold text-[#e06f83]">New FAQ</p>
+            <SettingsTextArea label="Question" placeholder="Enter question" value={newQ} onChange={(e) => setNewQ(e.target.value)} />
+            <SettingsTextArea label="Answer" placeholder="Enter answer" value={newA} onChange={(e) => setNewA(e.target.value)} rows={4} />
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={handleCreate} disabled={createFaq.isPending} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-5 text-sm font-medium text-white disabled:opacity-60">
+                <PlusIcon className="size-4" />
+                {createFaq.isPending ? "Adding…" : "Add FAQ"}
+              </button>
+              <button type="button" onClick={() => { setIsAddingNew(false); setNewQ(""); setNewA(""); }} className="flex h-10 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white px-5 text-sm font-medium text-[#4a4a4a] hover:bg-[#f7f7f7]">Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
     </SettingsPanel>
   );
 }
 
-function PrivacySettingsPanel() {
-  return (
-    <SettingsPanel
-      icon={<ShieldIcon className="size-6 text-[#e06f83]" />}
-      title="Privacy Policy"
-      actionLabel="Save Privacy Policy"
-    >
-      <div className="rounded-lg bg-white p-3">
-        <SettingsTextArea
-          label="Privacy Policy Content"
-          placeholder="Enter the privacy policy text here..."
-          rows={10}
-        />
-      </div>
-    </SettingsPanel>
-  );
-}
+function StaticContentSettingsPanel({
+  contentKey,
+  pageTitle,
+}: {
+  contentKey: StaticContentKey;
+  pageTitle: string;
+}) {
+  const { data, isLoading } = useStaticContent(contentKey);
+  const saveContent = useSaveStaticContent();
+  const [localTitle, setLocalTitle] = useState("");
+  const [localContent, setLocalContent] = useState("");
+  const [synced, setSynced] = useState(false);
 
-function TermsSettingsPanel() {
+  // Sync from API once data arrives
+  useEffect(() => {
+    if (data && !synced) {
+      setLocalTitle(data.title || pageTitle);
+      setLocalContent(data.content || "");
+      setSynced(true);
+    }
+  }, [data, pageTitle, synced]);
+
+  const handleSave = () => {
+    saveContent.mutate(
+      { key: contentKey, payload: { title: localTitle, content: localContent } },
+      {
+        onSuccess: () => toast.success(`${pageTitle} saved successfully.`),
+        onError: (err) =>
+          toast.error(err instanceof Error ? err.message : "Save failed."),
+      },
+    );
+  };
+
+  const icon =
+    contentKey === "privacy-policy" ? (
+      <ShieldIcon className="size-6 text-[#e06f83]" />
+    ) : contentKey === "terms-of-service" ? (
+      <DocumentNormalIcon className="size-6 text-[#e06f83]" />
+    ) : (
+      <AboutUsIcon className="size-6 text-[#e06f83]" />
+    );
+
   return (
     <SettingsPanel
-      icon={<DocumentNormalIcon className="size-6 text-[#e06f83]" />}
-      title="Terms & Conditions"
-      actionLabel="Save Terms & Conditions"
+      icon={icon}
+      title={pageTitle}
+      actionLabel={`Save ${pageTitle}`}
+      onAction={handleSave}
+      isActionLoading={saveContent.isPending}
     >
-      <div className="rounded-lg bg-white p-3">
-        <SettingsTextArea
-          label="Terms & Conditions Content"
-          placeholder="Enter the terms and conditions text here..."
-          rows={10}
-        />
+      <div className="flex flex-col gap-3.5 rounded-lg bg-white p-3">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="size-6 animate-spin rounded-full border-2 border-[#f7869a] border-t-transparent" />
+          </div>
+        ) : (
+          <>
+            <SettingsField
+              label="Page Title"
+              placeholder={pageTitle}
+              value={localTitle}
+              onChange={(e) => setLocalTitle(e.target.value)}
+            />
+            <SettingsTextArea
+              label="Content"
+              placeholder={`Enter the ${pageTitle.toLowerCase()} text here…`}
+              rows={14}
+              value={localContent}
+              onChange={(e) => setLocalContent(e.target.value)}
+            />
+            {data?.updatedAt && (
+              <p className="text-xs font-normal text-[#7a7a7a]">
+                Last saved:{" "}
+                {new Intl.DateTimeFormat("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                }).format(new Date(data.updatedAt))}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </SettingsPanel>
   );
@@ -3255,11 +3452,15 @@ function SettingsPanel({
   children,
   icon,
   title,
+  onAction,
+  isActionLoading,
 }: {
   actionLabel: string;
   children: React.ReactNode;
   icon: React.ReactNode;
   title: string;
+  onAction?: () => void;
+  isActionLoading?: boolean;
 }) {
   return (
     <Card className="flex w-full flex-col gap-[18px] rounded-[14px] border-[#e0e0e0] bg-[#fdf2f4] px-3 py-3.5 shadow-none">
@@ -3272,9 +3473,11 @@ function SettingsPanel({
         </div>
         <button
           type="button"
-          className="flex h-12 w-full shrink-0 items-center justify-center rounded-lg border border-[#f2f2f2] bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 sm:w-auto"
+          onClick={onAction}
+          disabled={isActionLoading}
+          className="flex h-12 w-full shrink-0 items-center justify-center rounded-lg border border-[#f2f2f2] bg-[linear-gradient(151deg,#e06f83_11%,#f093a3_32%,#e06f83_53%)] px-6 py-3 text-base font-medium leading-6 tracking-[0.08px] text-white transition-shadow hover:shadow-[0_0_0_2px_rgba(247,134,154,0.3)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 disabled:opacity-60 sm:w-auto"
         >
-          {actionLabel}
+          {isActionLoading ? "Saving…" : actionLabel}
         </button>
       </div>
       {children}
@@ -3286,10 +3489,14 @@ function SettingsField({
   label,
   placeholder,
   type = "text",
+  value,
+  onChange,
 }: {
   label: string;
   placeholder: string;
   type?: React.HTMLInputTypeAttribute;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <label className="flex flex-col gap-2">
@@ -3299,6 +3506,8 @@ function SettingsField({
       <input
         type={type}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
         className="h-12 rounded-lg border border-[#cbd5ed] bg-white px-4 py-3 text-base font-normal leading-6 tracking-[0.08px] text-[#121212] outline-none placeholder:text-[#7a7a7a] focus:border-[#f7869a] focus:ring-4 focus:ring-[#f7869a]/15"
       />
     </label>
@@ -3925,6 +4134,34 @@ function TrashIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
       <path d="M3 6h18M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function QuestionIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-1.5 2-2.5 2.5V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="12" cy="16.5" r="0.75" fill="currentColor" />
+    </svg>
+  );
+}
+
+function AboutUsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 19c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function EditPencilSmIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M15.232 5.232l3.536 3.536M4 20h4l10.5-10.5a2.5 2.5 0 0 0-3.536-3.536L4 16v4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
