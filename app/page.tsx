@@ -24,6 +24,11 @@ import type { AdminTrainer } from "@/lib/trainers-api";
 import { cn } from "@/lib/utils";
 import { useAdminMember, useAdminMembers } from "@/hooks/use-admin-members";
 import { useAdminTrainer, useAdminTrainers } from "@/hooks/use-admin-trainers";
+import {
+  useDashboardActivities,
+  useDashboardSummary,
+} from "@/hooks/use-dashboard";
+import type { DashboardSummary } from "@/lib/types/dashboard.types";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -36,56 +41,81 @@ const navSections = [
   { label: "Support", section: "support", icon: SupportIcon },
 ];
 
-const metricCards = [
-  {
-    id: "overview",
-    title: "Total Revenue",
-    value: "$40,543.00",
-    trend: "+3.5%",
-    trendTone: "text-[#f7869a]",
-  },
-  {
-    id: "transactions",
-    title: "Platform Commission",
-    value: "$40,543.00",
-    trend: "+3.5%",
-    trendTone: "text-[#f7869a]",
-  },
-  {
-    id: "verification",
-    title: "Pending Verifications",
-    value: "40",
-    warning: true,
-  },
-  {
-    id: "members",
-    title: "Total Member",
-    value: "40,543",
-    trend: "+3.5%",
-    trendTone: "text-[#16a34a]",
-  },
-  {
-    id: "trainers",
-    title: "Active Trainers",
-    value: "40,543",
-    trend: "+3.5%",
-    trendTone: "text-[#16a34a]",
-  },
-  {
-    id: "overview",
-    title: "Bookings This Week",
-    value: "30,543",
-    trend: "+3.5%",
-    trendTone: "text-[#16a34a]",
-  },
-];
+// ── helpers for live metric cards ─────────────────────────────────────────────
 
-const activities = [
-  ["New Member", "Rakib Roy", "10 min ago"],
-  ["submitted a new testimonial video", "By Maya Patel", "1 day ago"],
-  ["Pending Approval", "Liam Chen", "1 day ago"],
-  ["Banned", "Sophia Alvarez", "3 days ago"],
-  ["Account Upgraded", "Ethan Murphy", "5 days ago"],
+function formatMetricValue(value: number, prefix = "") {
+  return `${prefix}${value.toLocaleString()}`;
+}
+
+function formatTrend(trend?: number): { text: string; tone: string } | null {
+  if (trend == null) return null;
+  const up = trend >= 0;
+  return {
+    text: `${up ? "+" : ""}${trend.toFixed(1)}%`,
+    tone: up ? "text-[#16a34a]" : "text-[#f7869a]",
+  };
+}
+
+function buildMetricCards(data: DashboardSummary) {
+  const t = (m: { trend?: number }) => formatTrend(m.trend);
+  return [
+    {
+      id: "overview" as const,
+      title: "Total Revenue",
+      value: formatMetricValue(data.totalRevenue.value, "$"),
+      ...(t(data.totalRevenue)
+        ? { trend: t(data.totalRevenue)!.text, trendTone: t(data.totalRevenue)!.tone }
+        : {}),
+    },
+    {
+      id: "transactions" as const,
+      title: "Platform Commission",
+      value: formatMetricValue(data.platformCommission.value, "$"),
+      ...(t(data.platformCommission)
+        ? { trend: t(data.platformCommission)!.text, trendTone: t(data.platformCommission)!.tone }
+        : {}),
+    },
+    {
+      id: "verification" as const,
+      title: "Pending Verifications",
+      value: String(data.pendingVerifications.value),
+      warning: true,
+    },
+    {
+      id: "members" as const,
+      title: "Total Member",
+      value: formatMetricValue(data.totalMembers.value),
+      ...(t(data.totalMembers)
+        ? { trend: t(data.totalMembers)!.text, trendTone: t(data.totalMembers)!.tone }
+        : {}),
+    },
+    {
+      id: "trainers" as const,
+      title: "Active Trainers",
+      value: formatMetricValue(data.activeMembers.value),
+      ...(t(data.activeMembers)
+        ? { trend: t(data.activeMembers)!.text, trendTone: t(data.activeMembers)!.tone }
+        : {}),
+    },
+    {
+      id: "overview" as const,
+      title: "Bookings This Week",
+      value: formatMetricValue(data.bookingsThisWeek.value),
+      ...(t(data.bookingsThisWeek)
+        ? { trend: t(data.bookingsThisWeek)!.text, trendTone: t(data.bookingsThisWeek)!.tone }
+        : {}),
+    },
+  ];
+}
+
+// Static fallback cards shown while the API response loads
+const fallbackMetricCards = [
+  { id: "overview"      as const, title: "Total Revenue",         value: "—" },
+  { id: "transactions"  as const, title: "Platform Commission",   value: "—" },
+  { id: "verification"  as const, title: "Pending Verifications", value: "—", warning: true },
+  { id: "members"       as const, title: "Total Member",          value: "—" },
+  { id: "trainers"      as const, title: "Active Trainers",       value: "—" },
+  { id: "overview"      as const, title: "Bookings This Week",    value: "—" },
 ];
 
 const transactions = [
@@ -532,6 +562,9 @@ function OverviewSection({
 }: {
   onNavigate: (section: DashboardSection) => void;
 }) {
+  const { data: summaryData } = useDashboardSummary();
+  const cards = summaryData ? buildMetricCards(summaryData) : fallbackMetricCards;
+
   return (
     <>
       <h1 id="overview-title" className="sr-only">
@@ -541,7 +574,7 @@ function OverviewSection({
         aria-label="Dashboard metrics"
         className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
       >
-        {metricCards.map((metric) => (
+        {cards.map((metric) => (
           <MetricCard
             key={metric.title}
             {...metric}
@@ -869,6 +902,8 @@ function MetricCard({
 }
 
 function RecentActivity() {
+  const { data: activityItems, isLoading } = useDashboardActivities(10);
+
   return (
     <Card className="flex h-[450px] flex-col overflow-hidden rounded-[14px] border-[#e2e8f0] bg-white shadow-none lg:h-[450px]">
       <CardHeader className="shrink-0 gap-2 px-4 py-2.5 text-[#0f172a]">
@@ -876,9 +911,13 @@ function RecentActivity() {
         <p className="text-xs font-medium leading-4 text-[#7a7a7a]">Latest updates and actions.</p>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-y-auto pt-3">
-        {activities.map(([title, person, time]) => (
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm font-medium text-[#7a7a7a]">Loading activity…</p>
+          </div>
+        ) : (activityItems ?? []).map((item, index) => (
           <article
-            key={`${title}-${person}`}
+            key={`${item.type}-${item.occurredAt}-${index}`}
             className="flex min-h-[70px] gap-3 border-t border-[#e2e8f0] px-3 py-[13px]"
           >
             <Image
@@ -891,15 +930,18 @@ function RecentActivity() {
             <div className="min-w-0 flex-1">
               <div className="flex min-h-5 items-start gap-2">
                 <p className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#0f172a]">
-                  {title}
+                  {item.title}
                 </p>
-                <span className="flex shrink-0 items-center gap-2 text-xs font-medium leading-4 text-[#344056]">
+                <time
+                  dateTime={item.occurredAt}
+                  className="flex shrink-0 items-center gap-2 text-xs font-medium leading-4 text-[#344056]"
+                >
                   <ClockIcon className="size-[17px]" />
-                  {time}
-                </span>
+                  {formatRelativeTime(item.occurredAt)}
+                </time>
               </div>
               <p className="text-sm font-medium leading-5 text-[#344056]">
-                {person}
+                {item.person}
               </p>
             </div>
           </article>
@@ -907,6 +949,21 @@ function RecentActivity() {
       </CardContent>
     </Card>
   );
+}
+
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(diff)) return iso;
+
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 function MemberSection({

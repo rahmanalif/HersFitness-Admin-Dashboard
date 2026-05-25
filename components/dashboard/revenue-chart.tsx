@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useDashboardChart } from "@/hooks/use-dashboard";
+import type { ChartRange } from "@/lib/types/dashboard.types";
 import { cn } from "@/lib/utils";
 
-type Range = "7d" | "30d";
+type Range = ChartRange;
 
 type ChartPoint = {
   label: string;
@@ -14,17 +16,18 @@ type ChartPoint = {
   hires: number;
 };
 
-const weeklyData: ChartPoint[] = [
+// Fallback data used while the API response is loading
+const fallbackWeekly: ChartPoint[] = [
   { label: "Mon", revenue: 0, hires: 12 },
   { label: "Tue", revenue: 29000, hires: 32 },
   { label: "Wed", revenue: 30000, hires: 30 },
   { label: "Thu", revenue: 26000, hires: 26 },
   { label: "Fri", revenue: 23000, hires: 20 },
-  { label: "Sta", revenue: 30000, hires: 30 },
+  { label: "Sat", revenue: 30000, hires: 30 },
   { label: "Sun", revenue: 27000, hires: 27 },
 ];
 
-const monthlyData: ChartPoint[] = Array.from({ length: 30 }, (_, index) => {
+const fallbackMonthly: ChartPoint[] = Array.from({ length: 30 }, (_, index) => {
   const day = index + 1;
   const revenuePattern = [
     12000, 18000, 24000, 17000, 29000, 22000, 27000, 31000, 19000, 26000,
@@ -49,7 +52,14 @@ const hiresMax = 40;
 
 export function RevenueChart() {
   const [range, setRange] = useState<Range>("7d");
-  const data = range === "7d" ? weeklyData : monthlyData;
+  const { data: apiData, isLoading } = useDashboardChart(range);
+
+  const data: ChartPoint[] =
+    !isLoading && apiData && apiData.length > 0
+      ? apiData
+      : range === "7d"
+        ? fallbackWeekly
+        : fallbackMonthly;
 
   const visibleLabels = useMemo(() => {
     if (range === "7d") {
