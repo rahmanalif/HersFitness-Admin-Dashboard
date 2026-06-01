@@ -51,7 +51,7 @@ export function RevenueSection() {
     <section
       id="revenue"
       aria-labelledby="revenue-title"
-      className="flex min-h-0 flex-1 flex-col gap-6"
+      className="flex w-full flex-col gap-6 pb-6"
     >
       <h1 id="revenue-title" className="sr-only">
         Revenue

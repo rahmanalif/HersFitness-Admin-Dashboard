@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { RevenueSection } from "@/components/dashboard/revenue-section";
@@ -24,6 +24,11 @@ import type { AdminMember, AdminMemberActivity } from "@/lib/members-api";
 import type { AdminTrainer } from "@/lib/trainers-api";
 import { cn } from "@/lib/utils";
 import { useAdminMember, useAdminMembers } from "@/hooks/use-admin-members";
+import {
+  useAdminProfile,
+  useUpdateAdminProfile,
+  useUploadAdminProfileImage,
+} from "@/hooks/use-admin-profile";
 import { useAdminTrainer, useAdminTrainers } from "@/hooks/use-admin-trainers";
 import {
   useDashboardActivities,
@@ -45,6 +50,7 @@ import {
   useResolveTicket,
 } from "@/hooks/use-support";
 import type { DashboardSummary } from "@/lib/types/dashboard.types";
+import type { AdminProfile } from "@/lib/types/admin-profile.types";
 import type { StaticContentKey } from "@/lib/types/content.types";
 import type { TicketStatus } from "@/lib/types/support.types";
 import { toast } from "react-toastify";
@@ -751,6 +757,10 @@ function Topbar({
   onNavigate: (section: DashboardSection) => void;
   onToggleMobileMenu?: () => void;
 }) {
+  const { data: profile } = useAdminProfile();
+  const profileImageUrl = profile?.profileImageUrl ?? profile?.imageUrl;
+  const profileName = profile?.fullName || "Heba Eid";
+
   return (
     <header className="flex flex-col gap-4 border-b border-[#e0e0e0] px-6 py-4 md:flex-row md:items-center md:justify-between lg:min-h-[108px] lg:px-8">
       <div className="flex w-full items-center gap-4 md:max-w-[498px]">
@@ -781,14 +791,14 @@ function Topbar({
           onClick={() => onNavigate("settings")}
           className="flex items-center gap-2 rounded-lg px-3 py-2 text-lg font-medium leading-7 text-[#1f1f1f] transition-colors hover:bg-[#fdf2f4] hover:text-[#f7869a] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#f7869a]/30 md:px-[18px] md:py-3"
         >
-          <Image
-            src="/figma-assets/heba-avatar.png"
-            alt=""
-            width={48}
-            height={48}
-            className="size-10 rounded-full object-cover md:size-12"
+          <span
+            aria-hidden="true"
+            className="size-10 rounded-full bg-cover bg-center md:size-12"
+            style={{
+              backgroundImage: `url("${profileImageUrl || "/figma-assets/heba-avatar.png"}")`,
+            }}
           />
-          <span className="truncate">Heba Eid</span>
+          <span className="truncate">{profileName}</span>
         </button>
       </div>
     </header>
@@ -3116,17 +3126,206 @@ function SettingsIconButton({
 }
 
 function ProfileSettingsPanel() {
+  const { data: profile, isLoading, isError, refetch } = useAdminProfile();
+  const profileKey = [
+    profile?.id,
+    profile?.email,
+    profile?.fullName,
+    profile?.phoneNumber,
+    profile?.profileImageUrl,
+    profile?.imageUrl,
+  ].join(":");
+
+  return (
+    <ProfileSettingsForm
+      key={profileKey}
+      profile={profile}
+      isLoading={isLoading}
+      isError={isError}
+      onRetry={() => refetch()}
+    />
+  );
+}
+
+function ProfileSettingsForm({
+  profile,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  profile?: AdminProfile;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const updateProfile = useUpdateAdminProfile();
+  const uploadImage = useUploadAdminProfileImage();
+
+  const [fullName, setFullName] = useState(profile?.fullName ?? "");
+  const [email, setEmail] = useState(profile?.email ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber ?? "");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const previewUrl = useMemo(
+    () => (selectedImage ? URL.createObjectURL(selectedImage) : null),
+    [selectedImage],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const profileImageUrl =
+    previewUrl ?? profile?.profileImageUrl ?? profile?.imageUrl ?? "/figma-assets/heba-avatar.png";
+  const canUploadImage = selectedImage != null && !uploadImage.isPending;
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setUploadError(null);
+
+    if (!file) {
+      setSelectedImage(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSelectedImage(null);
+      setUploadError("Please choose an image file.");
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedImage(file);
+  };
+
+  const handleSaveProfile = () => {
+    updateProfile.mutate(
+      {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phoneNumber: phoneNumber.trim(),
+      },
+      {
+        onSuccess: () => toast.success("Profile information saved."),
+        onError: (err) =>
+          toast.error(err instanceof Error ? err.message : "Profile update failed."),
+      },
+    );
+  };
+
+  const handleUploadImage = () => {
+    if (!selectedImage) return;
+    setUploadError(null);
+
+    uploadImage.mutate(selectedImage, {
+      onSuccess: () => {
+        toast.success("Profile image updated.");
+        setSelectedImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      },
+      onError: (err) => {
+        const message =
+          err instanceof Error ? err.message : "Profile image upload failed.";
+        setUploadError(message);
+        toast.error(message);
+      },
+    });
+  };
+
   return (
     <SettingsPanel
       icon={<ProfileCircleIcon className="size-6 text-[#e06f83]" />}
       title="Profile Information"
       actionLabel="Save Profile Change"
+      onAction={handleSaveProfile}
+      isActionLoading={updateProfile.isPending}
     >
-      <div className="rounded-lg bg-white p-3">
-        <SettingsField label="Full Name" placeholder="Example" />
+      <div className="flex flex-col gap-4 rounded-lg bg-white p-3">
+        {isError ? (
+          <div className="flex flex-col gap-3 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm font-medium text-[#b91c1c] sm:flex-row sm:items-center sm:justify-between">
+            <span>Unable to load admin profile.</span>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="self-start rounded-lg bg-white px-3 py-2 text-[#991b1b] hover:bg-[#fee2e2] sm:self-auto"
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-4 rounded-lg border border-[#f2f2f2] bg-[#fff8f9] p-4 sm:flex-row sm:items-center">
+          <div
+            aria-label="Admin profile image"
+            role="img"
+            className="size-24 shrink-0 rounded-full border border-[#f5c9d1] bg-white bg-cover bg-center shadow-[0_8px_18px_rgba(224,111,131,0.14)]"
+            style={{ backgroundImage: `url("${profileImageUrl}")` }}
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <p className="text-base font-semibold text-[#121212]">
+              {selectedImage ? selectedImage.name : "Profile photo"}
+            </p>
+            <p className="text-sm text-[#7a7a7a]">
+              Choose an image file, preview it here, then upload it to update your admin avatar.
+            </p>
+            {uploadError ? (
+              <p className="text-sm font-medium text-[#dc2626]">{uploadError}</p>
+            ) : null}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="sr-only"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-10 items-center justify-center rounded-lg border border-[#e0e0e0] bg-white px-4 text-sm font-medium text-[#121212] hover:bg-[#f7f7f7]"
+              >
+                Choose Image
+              </button>
+              <button
+                type="button"
+                onClick={handleUploadImage}
+                disabled={!canUploadImage}
+                className="flex h-10 items-center justify-center rounded-lg bg-[#f7869a] px-4 text-sm font-semibold text-white hover:bg-[#f2738b] disabled:opacity-60"
+              >
+                {uploadImage.isPending ? "Uploading..." : "Upload Image"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <SettingsField
+          label="Full Name"
+          placeholder="Example"
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+          disabled={isLoading}
+        />
         <div className="mt-3.5 grid gap-3.5 md:grid-cols-2">
-          <SettingsField label="Email Address" placeholder="Example@email.com" type="email" />
-          <SettingsField label="Phone Number" placeholder="Example123" type="tel" />
+          <SettingsField
+            label="Email Address"
+            placeholder="Example@email.com"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={isLoading}
+          />
+          <SettingsField
+            label="Phone Number"
+            placeholder="Example123"
+            type="tel"
+            value={phoneNumber}
+            onChange={(event) => setPhoneNumber(event.target.value)}
+            disabled={isLoading}
+          />
         </div>
       </div>
     </SettingsPanel>
@@ -3486,12 +3685,14 @@ function SettingsPanel({
 }
 
 function SettingsField({
+  disabled,
   label,
   placeholder,
   type = "text",
   value,
   onChange,
 }: {
+  disabled?: boolean;
   label: string;
   placeholder: string;
   type?: React.HTMLInputTypeAttribute;
@@ -3508,7 +3709,8 @@ function SettingsField({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="h-12 rounded-lg border border-[#cbd5ed] bg-white px-4 py-3 text-base font-normal leading-6 tracking-[0.08px] text-[#121212] outline-none placeholder:text-[#7a7a7a] focus:border-[#f7869a] focus:ring-4 focus:ring-[#f7869a]/15"
+        disabled={disabled}
+        className="h-12 rounded-lg border border-[#cbd5ed] bg-white px-4 py-3 text-base font-normal leading-6 tracking-[0.08px] text-[#121212] outline-none placeholder:text-[#7a7a7a] focus:border-[#f7869a] focus:ring-4 focus:ring-[#f7869a]/15 disabled:bg-[#f7f7f7] disabled:text-[#7a7a7a]"
       />
     </label>
   );
